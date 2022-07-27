@@ -12,8 +12,8 @@ find_package(PkgConfig)
 include(CMakeFindDependencyMacro)
 find_dependency(BLAS)
 find_dependency(LAPACK)
-find_package(BLAS) 
-find_package(LAPACK)
+find_package(BLAS REQUIRED) 
+find_package(LAPACK REQUIRED)
 
 # Build shared library
 set(srcs)
