@@ -10,7 +10,7 @@ on:
 jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python_version }}
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}-{{ matrix.os_version }}
     strategy:
       fail-fast: false
       matrix:
@@ -21,14 +21,17 @@ jobs:
             cc: gcc-10
             cxx: g++-10
             fc: gfortran-10
+            os_version: latest
           - os: macos
             cc: gcc-11
             cxx: g++-11
             fc: gfortran-11
+            os_version: latest
           - os: windows
             cc: cl
             cxx: cl
             fc: gfortran
+            os_version: "2019"
         exclude:
           - os: macos
             python_version: "3.8"
