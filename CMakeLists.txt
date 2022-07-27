@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(libdlfind LANGUAGES Fortran)
+project(libdlfind LANGUAGES C Fortran)
 
 # Follow GNU conventions for installing directories
 include(GNUInstallDirs)
