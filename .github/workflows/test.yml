@@ -58,8 +58,8 @@ jobs:
         if: contains(matrix.os, 'macos')
         run: |
           brew install openblas
-          echo "LDFLAGS=-L/opt/homebrew/opt/openblas/lib" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/opt/homebrew/opt/openblas/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/usr/local/opt/openblas/lib" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/local/opt/openblas/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
       - name: Install OpenBLAS for Linux
         if: contains(matrix.os, 'ubuntu')
         run: sudo apt-get install libopenblas-dev
