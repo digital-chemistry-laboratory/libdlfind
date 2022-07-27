@@ -10,7 +10,7 @@ on:
 jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python_version }}
-    runs-on: ${{ matrix.os }}-{{ matrix.os_version }}
+    runs-on: ${{ matrix.os }}-${{ matrix.os_version }}
     strategy:
       fail-fast: false
       matrix:
