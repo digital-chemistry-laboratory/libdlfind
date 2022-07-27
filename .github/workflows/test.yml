@@ -45,9 +45,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python_version }}      
-      - name: Update GCC for Windows and download OpenBLAS
+      - name: Update GCC for Windows and download OpenBLAS # https://github.com/scipy/scipy/blob/main/.github/workflows/windows.yml
         if: contains(matrix.os, 'windows')
         run: |
+          choco install rtools --no-progress
+          echo "c:\rtools40\ucrt64\bin;" >> $env:GITHUB_PATH        
           choco upgrade mingw
           choco install unzip -y
           choco install wget -y
