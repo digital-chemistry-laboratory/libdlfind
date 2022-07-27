@@ -50,19 +50,18 @@ jobs:
         run: |
           choco install rtools --no-progress
           echo "c:\rtools40\ucrt64\bin;" >> $env:GITHUB_PATH        
-          choco upgrade mingw
           choco install unzip -y
           choco install wget -y
           wget https://github.com/scipy/scipy-ci-artifacts/raw/main/openblas_32_if.zip
           unzip -d c:\ openblas_32_if.zip
           echo "PKG_CONFIG_PATH=c:\opt\openblas\if_32\64\lib\pkgconfig;" >> $env:GITHUB_ENV
-      - name: Install OpenBLAS for Mac
-        if: contains(matrix.os, 'macos')
-        run: |
-          brew install openblas
-          openblas_prefix=$(brew --prefix openblas)
-          echo "LDFLAGS=-L${openblas_prefix}/lib" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=${openblas_prefix}/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+#      - name: Install OpenBLAS for Mac
+#        if: contains(matrix.os, 'macos')
+#        run: |
+#          brew install openblas
+#          openblas_prefix=$(brew --prefix openblas)
+#          echo "LDFLAGS=-L${openblas_prefix}/lib" >> $GITHUB_ENV
+#          echo "PKG_CONFIG_PATH=${openblas_prefix}/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
       - name: Install OpenBLAS for Linux
         if: contains(matrix.os, 'ubuntu')
         run: sudo apt-get install libopenblas-dev
