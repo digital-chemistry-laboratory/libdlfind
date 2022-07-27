@@ -67,8 +67,8 @@ _dl_find.argtypes = [
 
 def dl_find(
     nvarin: int,
-    nvarin2: int,
-    nspec: int,
+    nvarin2: int = 0,
+    nspec: int | None = None,
     master: int = 1,
     *,
     dlf_error: Callable = dummy_dlf_error,
@@ -101,6 +101,12 @@ def dl_find(
         dlf_put_coords: dlf_put_coords function for DL-FIND to call
         dlf_update: dlf_update function for DL-FIND to call
     """
+    n_atoms = int(nvarin / 3)
+
+    # Set sensible default for nspec
+    if nspec is None:
+        nspec = 2 * n_atoms
+
     _dl_find(
         c_int(nvarin),
         c_int(nvarin2),

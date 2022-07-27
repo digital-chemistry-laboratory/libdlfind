@@ -16,15 +16,4 @@
 #  License along with libdlfind.  If not, see
 #  <http://www.gnu.org/licenses/>.
 
-"""Python library for DL-FIND."""
-
-from importlib import metadata
-
-from libdlfind.lib import dl_find
-
-__all__ = [
-    "dl_find",
-]
-
-# Version
-__version__ = metadata.version("libdlfind")
+"""Tests for libdlfind."""

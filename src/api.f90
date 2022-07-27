@@ -27,8 +27,8 @@ subroutine api_dl_find(nvarin, nvarin2, nspec, master, c_dlf_error_, c_dlf_get_g
   integer(c_int), intent(in), value :: nvarin2 ! number of variables to read in in the second array (coords2)
   integer(c_int), intent(in), value :: nspec ! number of values in the integer array spec
   integer(c_int), intent(in), value :: master ! 1 if this task is the master of a parallel run, 0 otherwise
-  type(c_funptr), intent(in), value :: c_dlf_get_params_, c_dlf_get_gradient_, c_dlf_put_coords_, c_dlf_get_multistate_gradients_, &
-                                       c_dlf_error_, c_dlf_get_hessian_, c_dlf_update_ ! Functions received from C side
+  type(c_funptr), intent(in), value :: c_dlf_error_, c_dlf_get_gradient_, c_dlf_get_hessian_, c_dlf_get_multistate_gradients_, &
+                                       c_dlf_get_params_, c_dlf_put_coords_, c_dlf_update_ ! Functions received from C side
 
   ! Assign procedure pointers
   call c_f_procpointer(c_dlf_error_, dlf_error_)
@@ -66,6 +66,19 @@ subroutine dlf_get_gradient(nvar, coords, energy, gradient, iimage, kiter, statu
   integer, intent(out) :: status ! return code
 
   call dlf_get_gradient_(nvar, coords, energy, gradient, iimage, kiter, status)
+end subroutine
+
+subroutine dlf_get_hessian(nvar, coords, hessian, status)
+  use mod_globals, only: dlf_get_hessian_
+  use dlf_parameter_module, only: rk
+
+  implicit none
+  integer, intent(in) :: nvar ! number of xyz variables (3*nat)
+  real(rk), intent(in) :: coords(nvar) ! coordinates
+  real(rk), intent(out) :: hessian(nvar, nvar) ! hessian
+  integer, intent(out) :: status ! return code
+
+  call dlf_get_hessian_(nvar, coords, hessian, status)
 end subroutine
 
 subroutine dlf_get_multistate_gradients(nvar, coords, energy, gradient, coupling, needcoupling, iimage, status)
@@ -189,19 +202,6 @@ subroutine dlf_get_params( &
     po_mutation_rate, po_death_rate, po_scalefac, po_nsave, ntasks, tdlf_farm, n_po_scaling, neb_climb_test, neb_freeze_test, &
     nzero, coupled_states, qtsflag, imicroiter, maxmicrocycle, micro_esp_fit &
     )
-end subroutine
-
-subroutine dlf_get_hessian(nvar, coords, hessian, status)
-  use mod_globals, only: dlf_get_hessian_
-  use dlf_parameter_module, only: rk
-
-  implicit none
-  integer, intent(in) :: nvar ! number of xyz variables (3*nat)
-  real(rk), intent(in) :: coords(nvar) ! coordinates
-  real(rk), intent(out) :: hessian(nvar, nvar) ! hessian
-  integer, intent(out) :: status ! return code
-
-  call dlf_get_hessian_(nvar, coords, hessian, status)
 end subroutine
 
 subroutine dlf_put_coords(nvar, switch, energy, coords, iam)

@@ -7,6 +7,7 @@ __pycache__/
 .mypy_cache
 .pytest_cache
 .ipynb_checkpoints
+*synctex*
 
 # Distribution/packaging
 _skbuild/
