@@ -52,12 +52,16 @@ jobs:
         if: contains(matrix.os, 'windows')
         run: |
           choco install rtools --no-progress
-          echo "c:\rtools40\ucrt64\bin;" >> $env:GITHUB_PATH        
-          choco install unzip -y
-          choco install wget -y
-          wget https://github.com/scipy/scipy-ci-artifacts/raw/main/openblas_32_if.zip
-          unzip -d c:\ openblas_32_if.zip
-          echo "c:\opt\openblas\if_32\64\lib\;" >> $env:GITHUB_PATH       
+          echo "c:\rtools40\mingw64\bin;" >> $env:GITHUB_PATH
+          set PATH=c:\rtools40\usr\bin;%PATH%
+          pacman -Sy
+          pacman -S mingw64-x86_64-openblas
+          echo "c:\rtools40\mingw64\lib;" >> $env:GITHUB_PATH
+#          choco install unzip -y
+#          choco install wget -y
+#          wget https://github.com/scipy/scipy-ci-artifacts/raw/main/openblas_32_if.zip
+#          unzip -d c:\ openblas_32_if.zip
+#          echo "c:\opt\openblas\if_32\64\lib\;" >> $env:GITHUB_PATH       
 #         echo "PKG_CONFIG_PATH=c:\opt\openblas\if_32\64\lib\pkgconfig;" >> $env:GITHUB_ENV
 #      - name: Install OpenBLAS for Mac
 #        if: contains(matrix.os, 'macos')
