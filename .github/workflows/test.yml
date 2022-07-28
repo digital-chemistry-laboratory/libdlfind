@@ -57,7 +57,8 @@ jobs:
           choco install wget -y
           wget https://github.com/scipy/scipy-ci-artifacts/raw/main/openblas_32_if.zip
           unzip -d c:\ openblas_32_if.zip
-          echo "PKG_CONFIG_PATH=c:\opt\openblas\if_32\64\lib\pkgconfig;" >> $env:GITHUB_ENV
+          echo "c:\opt\openblas\if_32\64\lib\;" >> $env:GITHUB_PATH       
+#         echo "PKG_CONFIG_PATH=c:\opt\openblas\if_32\64\lib\pkgconfig;" >> $env:GITHUB_ENV
 #      - name: Install OpenBLAS for Mac
 #        if: contains(matrix.os, 'macos')
 #        run: |
