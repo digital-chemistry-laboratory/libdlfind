@@ -10,7 +10,7 @@ on:
 jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python_version }}
-    runs-on: ${{ matrix.os }}-${{ matrix.os_version }}
+    runs-on: ${{ matrix.os }}-latest
     strategy:
       fail-fast: false
       matrix:
@@ -21,17 +21,14 @@ jobs:
             cc: gcc-10
             cxx: g++-10
             fc: gfortran-10
-            os_version: latest
           - os: macos
             cc: gcc-11
             cxx: g++-11
             fc: gfortran-11
-            os_version: latest
           - os: windows
             cc: cl
             cxx: cl
             fc: gfortran
-            os_version: "2019"
         exclude:
           - os: macos
             python_version: "3.8"
@@ -44,29 +41,35 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
       - name: Install Python ${{ matrix.python_version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python_version }}      
+
       - name: Install RTools Windows # https://github.com/scipy/scipy/blob/main/.github/workflows/windows.yml
         if: contains(matrix.os, 'windows')
         run: |
           choco install rtools --no-progress
           echo "c:\rtools40\mingw64\bin;" >> $env:GITHUB_PATH
           echo "c:\rtools40\usr\bin;" >> $env:GITHUB_PATH
+
       - name: Install OpenBLAS for Windows
         if: contains(matrix.os, 'windows')
         run: |
           pacman -Sy
           pacman -S mingw-w64-x86_64-openblas --noconfirm
           echo "c:\rtools40\mingw64\lib;" >> $env:GITHUB_PATH
+
       - name: Install OpenBLAS for Linux
         if: contains(matrix.os, 'ubuntu')
         run: sudo apt-get install libopenblas-dev
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install --upgrade nox
+          
       - name: Run Nox tests
         run: python -m nox -s tests-${{ matrix.python_version }} --verbose
         env:
