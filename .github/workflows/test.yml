@@ -53,7 +53,7 @@ jobs:
         run: |
           choco install rtools --no-progress
           echo "c:\rtools40\mingw64\bin;" >> $env:GITHUB_PATH
-          set PATH=c:\rtools40\usr\bin;%PATH%
+          $env:Path += "c:\rtools40\usr\bin;"
           pacman -Sy
           pacman -S mingw64-x86_64-openblas
           echo "c:\rtools40\mingw64\lib;" >> $env:GITHUB_PATH
