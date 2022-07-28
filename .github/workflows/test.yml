@@ -48,12 +48,16 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python_version }}      
-      - name: Update GCC for Windows and download OpenBLAS # https://github.com/scipy/scipy/blob/main/.github/workflows/windows.yml
+      - name: Install RTools Windows # https://github.com/scipy/scipy/blob/main/.github/workflows/windows.yml
         if: contains(matrix.os, 'windows')
         run: |
           choco install rtools --no-progress
           echo "c:\rtools40\mingw64\bin;" >> $env:GITHUB_PATH
           echo "c:\rtools40\usr\bin;" >> $env:GITHUB_PATH
+
+      - name: Install OpenBLAS for Windows
+        if: contains(matrix.os, 'windows')
+        run: |
           pacman -Sy
           pacman -S mingw64-x86_64-openblas
           echo "c:\rtools40\mingw64\lib;" >> $env:GITHUB_PATH
