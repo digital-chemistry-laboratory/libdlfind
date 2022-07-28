@@ -1147,16 +1147,17 @@ subroutine dlf_checkpoint_hdlc_write
   use dlf_checkpoint, only: tchkform
   implicit none
   logical :: lerr
+  integer, parameter :: ifunit = 104
 ! **********************************************************************
   if(tchkform) then
-    open(unit=100,file="dlf_hdlc.chk",form="formatted")
+    open(unit=ifunit,file="dlf_hdlc.chk",form="formatted")
   else
-    open(unit=100,file="dlf_hdlc.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_hdlc.chk",form="unformatted")
   end if
 
-  call hdlc_wr_hdlc(100,hdlc,tchkform,lerr)
+  call hdlc_wr_hdlc(ifunit,hdlc,tchkform,lerr)
 
-  close(100)
+  close(ifunit)
 
 end subroutine dlf_checkpoint_hdlc_write
 
@@ -1167,15 +1168,16 @@ subroutine dlf_checkpoint_hdlc_read(lerr)
   use dlf_checkpoint, only: tchkform
   implicit none
   logical ,intent(out) :: lerr
+  integer, parameter :: ifunit = 104
 ! **********************************************************************
   if(tchkform) then
-    open(unit=100,file="dlf_hdlc.chk",form="formatted")
+    open(unit=ifunit,file="dlf_hdlc.chk",form="formatted")
   else
-    open(unit=100,file="dlf_hdlc.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_hdlc.chk",form="unformatted")
   end if
 
-  call hdlc_rd_hdlc(100,hdlc,tchkform,lerr)
+  call hdlc_rd_hdlc(ifunit,hdlc,tchkform,lerr)
 
-  close(100)
+  close(ifunit)
 
 end subroutine dlf_checkpoint_hdlc_read

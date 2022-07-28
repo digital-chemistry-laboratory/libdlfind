@@ -470,6 +470,7 @@ contains
     end if
     write(stdout,1000) "Maximum memory usage",dble(maxstorage)/1024.D0,&
         "kB"
+    call flush(stdout)
     call dlf_mpi_memory(storage,maxstorage)
     ! real number
 1000 format (t1,'................................................', &

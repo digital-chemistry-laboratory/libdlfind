@@ -589,7 +589,7 @@ subroutine dlf_dimer_was_midpoint(trerun_energy,testconv)
   ! ==================================================================
 
   ! send information to set_tsmode
-  call dlf_formstep_set_tsmode(1,-1,glob%energy) ! send energy
+  call dlf_formstep_set_tsmode(1,-1,(/glob%energy/)) ! send energy
   call dlf_formstep_set_tsmode(glob%nvar,0,glob%xcoords) ! TS-geometry
 
   call dlf_direct_xtoi(glob%nvar,dimer%varperimage,dimer%coreperimage, &
@@ -1197,45 +1197,54 @@ subroutine dlf_checkpoint_dimer_write
   use dlf_dimer, only: dimer
   use dlf_checkpoint, only: tchkform,write_separator
   implicit none
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
 ! **********************************************************************
   if(tchkform) then
 
-    open(unit=100,file="dlf_dimer.chk",form="formatted")
+    open(unit=ifunit,file="dlf_dimer.chk",form="formatted")
 
-    call write_separator(100,"Dimer Sizes")
-    write(100,*) dimer%varperimage
-    call write_separator(100,"Dimer Parameters")
-    write(100,*) dimer%status, dimer%mode, dimer%delta, dimer%emid, &
+    call write_separator(ifunit,"Dimer Sizes")
+    write(ifunit,*) dimer%varperimage
+    call write_separator(ifunit,"Dimer Parameters")
+    write(ifunit,*) dimer%status, dimer%mode, dimer%delta, dimer%emid, &
         dimer%curve, dimer%tolrot, dimer%toldrot, dimer%toptdir, &
         dimer%cgstep, dimer%extrapolate_grad, dimer%nrot, dimer%maxrot, &
         dimer%phi, dimer%dcurvedphi, dimer%cdelta
-    call write_separator(100,"Dimer Arrays")
-    write(100,*) dimer%xtangent, dimer%xmidpoint, dimer%rotgrad, &
+    call write_separator(ifunit,"Dimer Arrays")
+    write(ifunit,*) dimer%xtangent, dimer%xmidpoint, dimer%rotgrad, &
         dimer%rotdir, dimer%oldrotgrad, dimer%oldrotdir, dimer%vector, &
         dimer%theta, dimer%grad1
-    call write_separator(100,"END")
+    call write_separator(ifunit,"END")
 
 
   else
 
-    open(unit=100,file="dlf_dimer.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_dimer.chk",form="unformatted")
 
-    call write_separator(100,"Dimer Sizes")
-    write(100) dimer%varperimage
-    call write_separator(100,"Dimer Parameters")
-    write(100) dimer%status, dimer%mode, dimer%delta, dimer%emid, &
+    call write_separator(ifunit,"Dimer Sizes")
+    write(ifunit) dimer%varperimage
+    call write_separator(ifunit,"Dimer Parameters")
+    write(ifunit) dimer%status, dimer%mode, dimer%delta, dimer%emid, &
         dimer%curve, dimer%tolrot, dimer%toldrot, dimer%toptdir, &
         dimer%cgstep, dimer%extrapolate_grad, dimer%nrot, dimer%maxrot, &
         dimer%phi, dimer%dcurvedphi, dimer%cdelta
-    call write_separator(100,"Dimer Arrays")
-    write(100) dimer%xtangent, dimer%xmidpoint, dimer%rotgrad, &
+    call write_separator(ifunit,"Dimer Arrays")
+    write(ifunit) dimer%xtangent, dimer%xmidpoint, dimer%rotgrad, &
         dimer%rotdir, dimer%oldrotgrad, dimer%oldrotdir, dimer%vector, &
         dimer%theta, dimer%grad1
-    call write_separator(100,"END")
+    call write_separator(ifunit,"END")
 
   end if
 
-  close(100)
+  close(ifunit)
     
 end subroutine dlf_checkpoint_dimer_write
 !!****
@@ -1257,6 +1266,7 @@ subroutine dlf_checkpoint_dimer_read(tok)
   logical,intent(out) :: tok
   logical             :: tchk
   integer             :: varperimage
+  integer, parameter  :: ifunit = 104
 ! **********************************************************************
   tok=.false.
 
@@ -1268,63 +1278,63 @@ subroutine dlf_checkpoint_dimer_read(tok)
   end if
 
   if(tchkform) then
-    open(unit=100,file="dlf_dimer.chk",form="formatted")
+    open(unit=ifunit,file="dlf_dimer.chk",form="formatted")
   else
-    open(unit=100,file="dlf_dimer.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_dimer.chk",form="unformatted")
   end if
 
 
-  call read_separator(100,"Dimer Sizes",tchk)
+  call read_separator(ifunit,"Dimer Sizes",tchk)
   if(.not.tchk) return  
 
   if(tchkform) then
-    read(100,*,end=201,err=200) varperimage
+    read(ifunit,*,end=201,err=200) varperimage
   else
-    read(100,end=201,err=200) varperimage
+    read(ifunit,end=201,err=200) varperimage
   end if
 
   if(dimer%varperimage/=varperimage) then
     write(stdout,10) "Different numbers of variables per dimer image"
-    close(100)
+    close(ifunit)
     return
   end if
 
-  call read_separator(100,"Dimer Parameters",tchk)
+  call read_separator(ifunit,"Dimer Parameters",tchk)
   if(.not.tchk) return    
 
   if(tchkform) then
-    read(100,*,end=201,err=200) &
+    read(ifunit,*,end=201,err=200) &
         dimer%status, dimer%mode, dimer%delta, dimer%emid, &
         dimer%curve, dimer%tolrot, dimer%toldrot, dimer%toptdir, &
         dimer%cgstep, dimer%extrapolate_grad, dimer%nrot, dimer%maxrot, &
         dimer%phi, dimer%dcurvedphi, dimer%cdelta
   else
-    read(100,end=201,err=200) &
+    read(ifunit,end=201,err=200) &
         dimer%status, dimer%mode, dimer%delta, dimer%emid, &
         dimer%curve, dimer%tolrot, dimer%toldrot, dimer%toptdir, &
         dimer%cgstep, dimer%extrapolate_grad, dimer%nrot, dimer%maxrot, &
         dimer%phi, dimer%dcurvedphi, dimer%cdelta
   end if
 
-  call read_separator(100,"Dimer Arrays",tchk)
+  call read_separator(ifunit,"Dimer Arrays",tchk)
   if(.not.tchk) return
 
   if(tchkform) then
-    read(100,*,end=201,err=200) &
+    read(ifunit,*,end=201,err=200) &
         dimer%xtangent, dimer%xmidpoint, dimer%rotgrad, &
         dimer%rotdir, dimer%oldrotgrad, dimer%oldrotdir, dimer%vector, &
         dimer%theta, dimer%grad1
   else
-    read(100,end=201,err=200) &
+    read(ifunit,end=201,err=200) &
         dimer%xtangent, dimer%xmidpoint, dimer%rotgrad, &
         dimer%rotdir, dimer%oldrotgrad, dimer%oldrotdir, dimer%vector, &
         dimer%theta, dimer%grad1
   end if
 
-  call read_separator(100,"END",tchk)
+  call read_separator(ifunit,"END",tchk)
   if(.not.tchk) return
 
-  close(100)
+  close(ifunit)
   tok=.true.
 
   if(printl >= 6) write(stdout,"('Dimer checkpoint file successfully read')")

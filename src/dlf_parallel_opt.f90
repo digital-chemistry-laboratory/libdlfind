@@ -1388,6 +1388,15 @@ subroutine dlf_checkpoint_po_read
 
 logical               :: tchk, tallocated
 real(rk), allocatable :: dummy(:,:,:)
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
 
   trestarted=.false.
     
@@ -1400,56 +1409,56 @@ real(rk), allocatable :: dummy(:,:,:)
 
   ! open the checkpoint file
   if (tchkform) then
-    open(unit=100,file="dlf_parallel_opt.chk",form="formatted")
+    open(unit=ifunit,file="dlf_parallel_opt.chk",form="formatted")
   else
-    open(unit=100,file="dlf_parallel_opt.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_parallel_opt.chk",form="unformatted")
   end if
 
   if (stochastic) then
 
-    call read_separator(100,"Best arrays",tchk)
+    call read_separator(ifunit,"Best arrays",tchk)
     if (.not. tchk) return
     if (tchkform) then
-       read(100,*,end=201,err=200) energy_best, icoords_best(:), &
+       read(ifunit,*,end=201,err=200) energy_best, icoords_best(:), &
                                   &xcoords_best(:,:), igradient_best(:)
     else
-      read(100,end=201,err=200) energy_best, icoords_best(:), &
+      read(ifunit,end=201,err=200) energy_best, icoords_best(:), &
                                &xcoords_best(:,:), igradient_best(:)
     end if
 
   else if (genetic) then
 
-    call read_separator(100,"Population",tchk)
+    call read_separator(ifunit,"Population",tchk)
     if (.not. tchk) return
     if (tchkform) then
-       read(100,*,end=201,err=200) pop_icoords(:,:), pop_energies(:)
-       read(100,*,end=201,err=200) tallocated
+       read(ifunit,*,end=201,err=200) pop_icoords(:,:), pop_energies(:)
+       read(ifunit,*,end=201,err=200) tallocated
        if (tallocated .and. allocated(pop_xgradient)) then
-          read(100,*,end=201,err=200) pop_xgradient(:,:,:)
+          read(ifunit,*,end=201,err=200) pop_xgradient(:,:,:)
        else if (tallocated) then
           call allocate(dummy, glob%po_pop_size, 3, glob%nat)
-          read(100,*,end=201,err=200) dummy(:,:,:)
+          read(ifunit,*,end=201,err=200) dummy(:,:,:)
           call deallocate(dummy)
        end if
     else
-       read(100,end=201,err=200) pop_icoords(:,:), pop_energies(:)
-       read(100,end=201,err=200) tallocated
+       read(ifunit,end=201,err=200) pop_icoords(:,:), pop_energies(:)
+       read(ifunit,end=201,err=200) tallocated
        if (tallocated .and. allocated(pop_xgradient)) then
-          read(100,end=201,err=200) pop_xgradient(:,:,:)
+          read(ifunit,end=201,err=200) pop_xgradient(:,:,:)
        else if (tallocated) then
           call allocate(dummy, glob%po_pop_size, 3, glob%nat)
-          read(100,end=201,err=200) dummy(:,:,:)
+          read(ifunit,end=201,err=200) dummy(:,:,:)
           call deallocate(dummy)
        end if
     end if
 
   end if
 
-  call read_separator(100,"END",tchk)
+  call read_separator(ifunit,"END",tchk)
   if (.not.tchk) return
 
 ! successful reading
-  close(100)
+  close(ifunit)
   trestarted=.true.
   return
 
@@ -1491,45 +1500,46 @@ end subroutine dlf_checkpoint_po_read
 subroutine dlf_checkpoint_po_write
 !! SOURCE
 
+  integer, parameter :: ifunit = 104
 ! Only want one processor to do the writing; that processor must know         
 ! all the necessary information.
   if (glob%iam /= 0) return 
 
 ! Open the checkpoint file
   if (tchkform) then
-    open(unit=100,file="dlf_parallel_opt.chk",form="formatted")
+    open(unit=ifunit,file="dlf_parallel_opt.chk",form="formatted")
   else
-    open(unit=100,file="dlf_parallel_opt.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_parallel_opt.chk",form="unformatted")
   end if
 
   if (stochastic) then
 
-    call write_separator(100,"Best arrays")
+    call write_separator(ifunit,"Best arrays")
     if (tchkform) then
-       write(100,*) energy_best, icoords_best(:), &
+       write(ifunit,*) energy_best, icoords_best(:), &
                    &xcoords_best(:,:), igradient_best(:)
     else
-      write(100) energy_best, icoords_best(:), &
+      write(ifunit) energy_best, icoords_best(:), &
                 &xcoords_best(:,:), igradient_best(:)
     end if
 
   else if (genetic) then
 
-    call write_separator(100,"Population")
+    call write_separator(ifunit,"Population")
     if (tchkform) then
-       write(100,*) pop_icoords(:,:), pop_energies(:)
-       write(100,*) allocated(pop_xgradient)
-       if (allocated(pop_xgradient)) write(100,*) pop_xgradient(:,:,:)
+       write(ifunit,*) pop_icoords(:,:), pop_energies(:)
+       write(ifunit,*) allocated(pop_xgradient)
+       if (allocated(pop_xgradient)) write(ifunit,*) pop_xgradient(:,:,:)
     else
-       write(100) pop_icoords(:,:), pop_energies(:)
-       write(100) allocated(pop_xgradient)
-       if (allocated(pop_xgradient)) write(100) pop_xgradient(:,:,:)
+       write(ifunit) pop_icoords(:,:), pop_energies(:)
+       write(ifunit) allocated(pop_xgradient)
+       if (allocated(pop_xgradient)) write(ifunit) pop_xgradient(:,:,:)
     end if
 
   end if
 
-  call write_separator(100,"END")
-  close(100)
+  call write_separator(ifunit,"END")
+  close(ifunit)
 
 end subroutine dlf_checkpoint_po_write
 !!****

@@ -95,8 +95,10 @@ MODULE LBFGS_MODULE
     REAL(RK), ALLOCATABLE   :: store2(:) ! N old coords
     REAL(RK), ALLOCATABLE   :: rho(:)    ! M WORK N+1 - N+M
     REAL(RK), ALLOCATABLE   :: alpha(:)  ! M WORK N+M+1 - N+2M
-    REAL(RK), ALLOCATABLE   :: step(:,:) ! M,N WORK N+2M+1 - N+2M+NM
-    REAL(RK), ALLOCATABLE   :: dgrad(:,:)! M,N WORK N+2M+NM+1 - N+2M+2NM
+    ! YL 22/01/2021: swapped the two dimensions because Fortran is a column-major language and
+    !                the previous discontiguous way of use of the arrays incur temporary arrays
+    REAL(RK), ALLOCATABLE   :: step(:,:) ! N,M WORK N+2M+1 - N+2M+NM
+    REAL(RK), ALLOCATABLE   :: dgrad(:,:)! N,M WORK N+2M+NM+1 - N+2M+2NM
     logical                 :: tprecon ! is precon set (and allocated)?
     real(rk), allocatable   :: precon(:,:) ! (N,N) guess for the initial inverse hessian
                                 ! full matrix, not just the diagonal. If this is used,
@@ -171,8 +173,8 @@ SUBROUTINE dlf_lbfgs_step(x,g,step_)
   ! ====================================================================
 
   ! COMPUTE THE NEW STEP AND GRADIENT CHANGE
-  lbfgs%step(lbfgs%point,:) = x(:) - lbfgs%store2(:) 
-  lbfgs%dgrad(lbfgs%point,:) = g(:) - lbfgs%store(:)
+  lbfgs%step(:,lbfgs%point) = x(:) - lbfgs%store2(:) 
+  lbfgs%dgrad(:,lbfgs%point) = g(:) - lbfgs%store(:)
 
   oldpoint=lbfgs%point
 
@@ -188,8 +190,8 @@ SUBROUTINE dlf_lbfgs_step(x,g,step_)
 
   bound = lbfgs%iter - 1
   IF ( lbfgs%iter>lbfgs%m ) bound = lbfgs%m
-  ys = DDOT(lbfgs%n,lbfgs%dgrad(oldpoint,:),1,lbfgs%step(oldpoint,:),1)
-  yy = DDOT(lbfgs%n,lbfgs%dgrad(oldpoint,:),1,lbfgs%dgrad(oldpoint,:),1)
+  ys = DDOT(lbfgs%n,lbfgs%dgrad(:,oldpoint),1,lbfgs%step(:,oldpoint),1)
+  yy = DDOT(lbfgs%n,lbfgs%dgrad(:,oldpoint),1,lbfgs%dgrad(:,oldpoint),1)
   diag(:) = ys/yy ! default guess for diag
   !print*,"JK precon scale factor:",ys/yy
 
@@ -211,10 +213,10 @@ SUBROUTINE dlf_lbfgs_step(x,g,step_)
   DO i = 1 , bound
     cp = cp - 1
     IF ( cp==0 ) cp = lbfgs%m 
-    sq = DDOT(lbfgs%n,lbfgs%step(cp,:),1,lbfgs%store(:),1)
+    sq = DDOT(lbfgs%n,lbfgs%step(:,cp),1,lbfgs%store(:),1)
     lbfgs%alpha(cp) = lbfgs%rho(cp)*sq
-    !CALL DAXPY(lbfgs%n,-lbfgs%alpha(cp),lbfgs%dgrad(cp,:),1,lbfgs%store(:),1) 
-    lbfgs%store(:)=lbfgs%store(:)-lbfgs%alpha(cp)*lbfgs%dgrad(cp,:)
+    !CALL DAXPY(lbfgs%n,-lbfgs%alpha(cp),lbfgs%dgrad(:,cp),1,lbfgs%store(:),1) 
+    lbfgs%store(:)=lbfgs%store(:)-lbfgs%alpha(cp)*lbfgs%dgrad(:,cp)
   END DO
   if(dbg) print*,"removed DAXPY"
   if(dbg) print*,"AFTER CALL TO DAXPY"
@@ -233,17 +235,17 @@ SUBROUTINE dlf_lbfgs_step(x,g,step_)
   !
   DO i = 1 , bound
     if(dbg) print*,"cp",cp
-    yr = DDOT(lbfgs%n,lbfgs%dgrad(cp,:),1,lbfgs%store(:),1)
+    yr = DDOT(lbfgs%n,lbfgs%dgrad(:,cp),1,lbfgs%store(:),1)
     beta = lbfgs%rho(cp)*yr
     beta = lbfgs%alpha(cp) - beta
-    !CALL DAXPY(lbfgs%n,beta,lbfgs%step(cp,:),1,lbfgs%store(:),1)
-    lbfgs%store(:)=lbfgs%store(:)+beta*lbfgs%step(cp,:)
+    !CALL DAXPY(lbfgs%n,beta,lbfgs%step(:,cp),1,lbfgs%store(:),1)
+    lbfgs%store(:)=lbfgs%store(:)+beta*lbfgs%step(:,cp)
     cp = cp + 1
     IF ( cp>lbfgs%m ) cp = 1
   END DO
   !
   ! STORE THE NEW SEARCH DIRECTION
-  lbfgs%step(lbfgs%point,:) = lbfgs%store(:)
+  lbfgs%step(:,lbfgs%point) = lbfgs%store(:)
 
   DO i = 1 , lbfgs%n
     lbfgs%store(i) = g(i)
@@ -254,7 +256,7 @@ SUBROUTINE dlf_lbfgs_step(x,g,step_)
   ! ====================================================================
   ! check that function is descending
   ! ====================================================================
-  yr= ddot (lbfgs%n,lbfgs%step(lbfgs%point,:),1,g(:),1)
+  yr= ddot (lbfgs%n,lbfgs%step(:,lbfgs%point),1,g(:),1)
   if(yr>0.D0) then
     if(printl>=4) write(stdout,*) "Inverting BFGS direction"
     stp=-stp
@@ -264,11 +266,11 @@ SUBROUTINE dlf_lbfgs_step(x,g,step_)
     print*,"stp",stp
     print*,"lbfgs%step(:,:)",lbfgs%step(:,:)
     print*,"lbfgs%point",lbfgs%point
-    print*,"lbfgs%step(lbfgs%point,:)",lbfgs%step(lbfgs%point,:)
+    print*,"lbfgs%step(:,lbfgs%point)",lbfgs%step(:,lbfgs%point)
   end if
 
   ! set step (return value)
-  step_(:)=stp*lbfgs%step(lbfgs%point,:)
+  step_(:)=stp*lbfgs%step(:,lbfgs%point)
   
   ! Store old gradient and coordinates
   lbfgs%store(:) = g(:)
@@ -507,8 +509,8 @@ subroutine dlf_lbfgs_init(nvar,nmem)
   call allocate(lbfgs%store2,LBFGS%N)
   call allocate(lbfgs%rho,LBFGS%M)
   call allocate(lbfgs%alpha,LBFGS%M)
-  call allocate(lbfgs%step,LBFGS%M,LBFGS%N)
-  call allocate(lbfgs%dgrad,LBFGS%M,LBFGS%N)
+  call allocate(lbfgs%step,LBFGS%N,LBFGS%M)
+  call allocate(lbfgs%dgrad,LBFGS%N,LBFGS%M)
 
   ! variables to set at the beginning
   lbfgs%iter = 0
@@ -710,6 +712,15 @@ subroutine dlf_checkpoint_lbfgs_write
   use dlf_checkpoint, only: tchkform,write_separator
   implicit none
   type(lbfgs_type),pointer :: lbfgs_current
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
   ! **********************************************************************
   if(.not.tinit) call dlf_fail("LBFGS not initialised! (in checkpoint write)")
 
@@ -717,35 +728,35 @@ subroutine dlf_checkpoint_lbfgs_write
   lbfgs => lbfgs_first
 
   if(tchkform) then
-    open(unit=100,file="dlf_lbfgs.chk",form="formatted")
-    call write_separator(100,"current")
-    write(100,*) lbfgs_current%tag
+    open(unit=ifunit,file="dlf_lbfgs.chk",form="formatted")
+    call write_separator(ifunit,"current")
+    write(ifunit,*) lbfgs_current%tag
     do while (associated(lbfgs))
-      call write_separator(100,"NM")
-      write(100,*) lbfgs%n,lbfgs%m
-      call write_separator(100,"Arrays")
-      write(100,*) lbfgs%store,lbfgs%store2,lbfgs%rho,lbfgs%alpha,lbfgs%step,lbfgs%dgrad
-      call write_separator(100,"Position")
-      write(100,*) lbfgs%point,lbfgs%iter
+      call write_separator(ifunit,"NM")
+      write(ifunit,*) lbfgs%n,lbfgs%m
+      call write_separator(ifunit,"Arrays")
+      write(ifunit,*) lbfgs%store,lbfgs%store2,lbfgs%rho,lbfgs%alpha,lbfgs%step,lbfgs%dgrad
+      call write_separator(ifunit,"Position")
+      write(ifunit,*) lbfgs%point,lbfgs%iter
       lbfgs=>lbfgs%next
     end do
-    call write_separator(100,"END")
+    call write_separator(ifunit,"END")
   else
-    open(unit=100,file="dlf_lbfgs.chk",form="unformatted")
-    call write_separator(100,"current")
-    write(100) lbfgs_current%tag
+    open(unit=ifunit,file="dlf_lbfgs.chk",form="unformatted")
+    call write_separator(ifunit,"current")
+    write(ifunit) lbfgs_current%tag
     do while (associated(lbfgs))
-      call write_separator(100,"NM")
-      write(100) lbfgs%n,lbfgs%m
-      call write_separator(100,"Arrays")
-      write(100) lbfgs%store,lbfgs%store2,lbfgs%rho,lbfgs%alpha,lbfgs%step,lbfgs%dgrad
-      call write_separator(100,"Position")
-      write(100) lbfgs%point,lbfgs%iter
+      call write_separator(ifunit,"NM")
+      write(ifunit) lbfgs%n,lbfgs%m
+      call write_separator(ifunit,"Arrays")
+      write(ifunit) lbfgs%store,lbfgs%store2,lbfgs%rho,lbfgs%alpha,lbfgs%step,lbfgs%dgrad
+      call write_separator(ifunit,"Position")
+      write(ifunit) lbfgs%point,lbfgs%iter
       lbfgs=>lbfgs%next
     end do
-    call write_separator(100,"END")
+    call write_separator(ifunit,"END")
   end if
-  close(100)
+  close(ifunit)
   lbfgs => lbfgs_current
 
 end subroutine dlf_checkpoint_lbfgs_write
@@ -760,6 +771,7 @@ subroutine dlf_checkpoint_lbfgs_read(tok)
   logical             :: tchk
   integer             :: n_f,m_f
   character(40)       :: tag_read
+  integer, parameter  :: ifunit = 104
   ! **********************************************************************
   tok=.false.
   if(.not.tinit) call dlf_fail("LBFGS not initialised! (in checkpoint read)")
@@ -772,81 +784,81 @@ subroutine dlf_checkpoint_lbfgs_read(tok)
   end if
 
   if(tchkform) then
-    open(unit=100,file="dlf_lbfgs.chk",form="formatted")
+    open(unit=ifunit,file="dlf_lbfgs.chk",form="formatted")
   else
-    open(unit=100,file="dlf_lbfgs.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_lbfgs.chk",form="unformatted")
   end if
 
   lbfgs => lbfgs_first
 
-  call read_separator(100,"current",tchk)
+  call read_separator(ifunit,"current",tchk)
   if(.not.tchk) return    
 
   if(tchkform) then
-    read(100,*,end=201,err=200) tag_read
+    read(ifunit,*,end=201,err=200) tag_read
   else
-    read(100,end=201,err=200) tag_read
+    read(ifunit,end=201,err=200) tag_read
   end if
 
   do while (associated(lbfgs))
 
 
-    call read_separator(100,"NM",tchk)
+    call read_separator(ifunit,"NM",tchk)
     if(.not.tchk) return    
 
     if(tchkform) then
-      read(100,*,end=201,err=200) n_f,m_f
+      read(ifunit,*,end=201,err=200) n_f,m_f
     else
-      read(100,end=201,err=200) n_f,m_f
+      read(ifunit,end=201,err=200) n_f,m_f
     end if
     
     if(n_f/=lbfgs%n) then
       write(stdout,10) "Different L-BFGS system size"
-      close(100)
+      close(ifunit)
       return
     end if
     if(m_f/=lbfgs%m) then
       write(stdout,10) "Different L-BFGS memory size"
-      close(100)
+      close(ifunit)
       return
     end if
     
-    call read_separator(100,"Arrays",tchk)
+    call read_separator(ifunit,"Arrays",tchk)
     if(.not.tchk) return 
     
     if(tchkform) then
-      read(100,*,end=201,err=200) lbfgs%store,lbfgs%store2,lbfgs%rho,lbfgs%alpha,lbfgs%step,lbfgs%dgrad
+      read(ifunit,*,end=201,err=200) lbfgs%store,lbfgs%store2,lbfgs%rho,lbfgs%alpha,lbfgs%step,lbfgs%dgrad
     else
-      read(100,end=201,err=200) lbfgs%store,lbfgs%store2,lbfgs%rho,lbfgs%alpha,lbfgs%step,lbfgs%dgrad
+      read(ifunit,end=201,err=200) lbfgs%store,lbfgs%store2,lbfgs%rho,lbfgs%alpha,lbfgs%step,lbfgs%dgrad
     end if
     
-    call read_separator(100,"Position",tchk)
+    call read_separator(ifunit,"Position",tchk)
     if(.not.tchk) return 
 
     if(tchkform) then
-      read(100,*,end=201,err=200) lbfgs%point,lbfgs%iter
+      read(ifunit,*,end=201,err=200) lbfgs%point,lbfgs%iter
     else
-      read(100,end=201,err=200) lbfgs%point,lbfgs%iter
+      read(ifunit,end=201,err=200) lbfgs%point,lbfgs%iter
     end if
 
     lbfgs=>lbfgs%next
 
   end do ! while (associated(lbfgs))
 
-  call read_separator(100,"END",tchk)
+  call read_separator(ifunit,"END",tchk)
   if(.not.tchk) return 
     
   ! now make sure that the instance of the checkpoint is selected
   call dlf_lbfgs_select(trim(tag_read),.false.)
 
   if(printl >= 6) write(stdout,"('LBFGS checkpoint file sucessfully read')")
-  close(100)
+  close(ifunit)
   tok=.true.
 
   return
 
   ! return on error
-  close(100)
+  close(ifunit)
 200 continue
   write(stdout,10) "Error reading LBFGS checkpoint file"
   return

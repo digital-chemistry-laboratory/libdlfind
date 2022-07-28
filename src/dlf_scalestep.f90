@@ -712,20 +712,29 @@ subroutine dlf_checkpoint_linesearch_write
   use dlf_checkpoint, only: tchkform,write_separator
   implicit none
   integer :: fail
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
 ! **********************************************************************
   if (glob%iline/=1.and.glob%iline/=2.and.glob%iline/=3) return
   if(tchkform) then
-    open(unit=100,file="dlf_linesearch.chk",form="formatted")
-    call write_separator(100,"Linesearch-Arrays")
-    write(100,*) oldgradient,tr
-    call write_separator(100,"END")
-    close(100)
+    open(unit=ifunit,file="dlf_linesearch.chk",form="formatted")
+    call write_separator(ifunit,"Linesearch-Arrays")
+    write(ifunit,*) oldgradient,tr
+    call write_separator(ifunit,"END")
+    close(ifunit)
   else
-    open(unit=100,file="dlf_linesearch.chk",form="unformatted")
-    call write_separator(100,"Linesearch-Arrays")
-    write(100) oldgradient,tr
-    call write_separator(100,"END")
-    close(100)
+    open(unit=ifunit,file="dlf_linesearch.chk",form="unformatted")
+    call write_separator(ifunit,"Linesearch-Arrays")
+    write(ifunit) oldgradient,tr
+    call write_separator(ifunit,"END")
+    close(ifunit)
   end if
 end subroutine dlf_checkpoint_linesearch_write
 
@@ -741,6 +750,7 @@ subroutine dlf_checkpoint_linesearch_read(tok)
   implicit none
   logical,intent(out) :: tok
   logical             :: tchk
+  integer, parameter  :: ifunit = 104
 ! **********************************************************************
   tok=.true.
   if (glob%iline/=1.and.glob%iline/=2.and.glob%iline/=3) return
@@ -754,33 +764,33 @@ subroutine dlf_checkpoint_linesearch_read(tok)
   end if
 
   if(tchkform) then
-    open(unit=100,file="dlf_linesearch.chk",form="formatted")
+    open(unit=ifunit,file="dlf_linesearch.chk",form="formatted")
   else
-    open(unit=100,file="dlf_linesearch.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_linesearch.chk",form="unformatted")
   end if
 
-  call read_separator(100,"Linesearch-Arrays",tchk)
+  call read_separator(ifunit,"Linesearch-Arrays",tchk)
   if(.not.tchk) return 
 
   if(tchkform) then
-    read(100,*,end=201,err=200) oldgradient,tr
+    read(ifunit,*,end=201,err=200) oldgradient,tr
   else
-    read(100,end=201,err=200) oldgradient,tr
+    read(ifunit,end=201,err=200) oldgradient,tr
   end if
-  call read_separator(100,"END",tchk)
+  call read_separator(ifunit,"END",tchk)
   if(.not.tchk) return 
 
-  close(100)
+  close(ifunit)
   tok=.true.
   return
 
   ! return on error
 200 continue
-  close(100)
+  close(ifunit)
   write(stdout,10) "Error reading CG checkpoint file"
   return
 201 continue
-  close(100)
+  close(ifunit)
   write(stdout,10) "Error (EOF) reading CG checkpoint file"
   return
 10 format("Checkpoint reading WARNING: ",a)
