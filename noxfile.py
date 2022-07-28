@@ -15,7 +15,7 @@ def tests(session: Session) -> None:
     """Run tests."""
     args = session.posargs + ["--cov=libdlfind", "--import-mode=importlib", "-s"]
     session.install("-r", "requirements-test.txt")
-    session.install(".", "--verbose")
+    session.install(".")
     session.run("pytest", *args)
 
 
