@@ -38,7 +38,7 @@ jobs:
           CIBW_BUILD_VERBOSITY: 1
           CIBW_ARCHS_MACOS: x86_64
           CIBW_ENVIRONMENT_MACOS: CC=clang CXX=clang FC=gfortran-11
-          CIBW_BEFORE_BUILD_LINUX: sudo apt-get install libopenblas-dev
+          CIBW_BEFORE_BUILD_LINUX: yum install openblas-devel
           CIBW_ARCHS: auto64
           CIBW_SKIP: skip = pp* *-musllinux*
 
