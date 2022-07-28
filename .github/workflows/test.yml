@@ -59,7 +59,7 @@ jobs:
         if: contains(matrix.os, 'windows')
         run: |
           pacman -Sy
-          pacman -S mingw64-x86_64-openblas
+          pacman -S mingw-w64-x86_64-openblas
           echo "c:\rtools40\mingw64\lib;" >> $env:GITHUB_PATH
 #          choco install unzip -y
 #          choco install wget -y
