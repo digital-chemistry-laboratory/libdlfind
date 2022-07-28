@@ -8,7 +8,6 @@ include(GNUInstallDirs)
 set(CMAKE_Fortran_PREPROCESS ON)
 
 # Find BLAS and LAPACK
-find_package(PkgConfig)
 include(CMakeFindDependencyMacro)
 find_dependency(BLAS)
 find_dependency(LAPACK)
