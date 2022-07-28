@@ -18,7 +18,7 @@
 
 from skbuild import setup
 
-URL = ""
+URL = "https://github.com/kjelljorner/libdlfind"
 DESCRIPTION = "Python library for DL-FIND"
 LONG_DESCRIPTION = f"""\
 {DESCRIPTION}. For more information, see the [project repository]({URL}).
