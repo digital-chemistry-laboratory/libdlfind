@@ -258,7 +258,7 @@ subroutine dlf_formstep
       oldgrad(:)=glob%igradient(1:nihvar)
     end if
     ! send information to set_tsmode
-    call dlf_formstep_set_tsmode(1,-1,glob%energy) ! send energy
+    call dlf_formstep_set_tsmode(1,-1,(/glob%energy/)) ! send energy
     call dlf_formstep_set_tsmode(glob%nvar,0,glob%xcoords) ! TS-geometry
     call dlf_prfo_step(nihvar, glob%icoords(1:nihvar), &
         glob%igradient(1:nihvar), glob%ihessian, glob%step(1:nihvar))
@@ -633,51 +633,60 @@ subroutine dlf_checkpoint_formstep_write
   use dlf_hessian
   use dlf_checkpoint, only: tchkform,write_separator
   implicit none
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
 ! **********************************************************************
 
 ! Open the checkpoint file (it may result in an empty file)
   if(tchkform) then
-    open(unit=100,file="dlf_formstep.chk",form="formatted")
+    open(unit=ifunit,file="dlf_formstep.chk",form="formatted")
   else
-    open(unit=100,file="dlf_formstep.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_formstep.chk",form="unformatted")
   end if
 
 ! Data for dlf_formstep_set_tsmode
   if(allocated(tscoords).or.allocated(tsmode_r).or.tenergy) then
-    call write_separator(100,"TSMODE")
+    call write_separator(ifunit,"TSMODE")
 
     ! write allocation status
     if(tchkform) then
-      write(100,*) allocated(tscoords), allocated(tsmode_r),tenergy
+      write(ifunit,*) allocated(tscoords), allocated(tsmode_r),tenergy
     else
-      write(100) allocated(tscoords), allocated(tsmode_r),tenergy
+      write(ifunit) allocated(tscoords), allocated(tsmode_r),tenergy
     end if
 
     if(allocated(tscoords)) then
       if(tchkform) then
-        write(100,*) tscoords(:)
+        write(ifunit,*) tscoords(:)
       else
-        write(100) tscoords(:)
+        write(ifunit) tscoords(:)
       end if
     end if
 
     if(allocated(tsmode_r)) then
       if(tchkform) then
-        write(100,*) tsmode_r(:)
+        write(ifunit,*) tsmode_r(:)
       else
-        write(100) tsmode_r(:)
+        write(ifunit) tsmode_r(:)
       end if
     end if
 
     if(tenergy) then
       if(tchkform) then
-        write(100,*) energy
+        write(ifunit,*) energy
       else
-        write(100) energy
+        write(ifunit) energy
       end if
     end if
 
-    call write_separator(100,"END TSM")
+    call write_separator(ifunit,"END TSM")
   end if
 
   select case (glob%iopt)
@@ -689,15 +698,15 @@ subroutine dlf_checkpoint_formstep_write
   case (1:2,30)
 
     if(tchkform) then
-      call write_separator(100,"CG-Arrays")
-      write(100,*) cgstep,fricm
-      write(100,*) oldg1,g1,oldcoords
-      call write_separator(100,"END")
+      call write_separator(ifunit,"CG-Arrays")
+      write(ifunit,*) cgstep,fricm
+      write(ifunit,*) oldg1,g1,oldcoords
+      call write_separator(ifunit,"END")
     else
-      call write_separator(100,"CG-Arrays")
-      write(100) cgstep,fricm
-      write(100) oldg1,g1,oldcoords
-      call write_separator(100,"END")
+      call write_separator(ifunit,"CG-Arrays")
+      write(ifunit) cgstep,fricm
+      write(ifunit) oldg1,g1,oldcoords
+      call write_separator(ifunit,"END")
     end if
 
 ! L-BFGS
@@ -707,21 +716,21 @@ subroutine dlf_checkpoint_formstep_write
 
 ! P-RFO
   case (10)
-    call write_separator(100,"TS-vectorset")
+    call write_separator(ifunit,"TS-vectorset")
     if(tchkform) then
-      write(100,*) tsvectorset
+      write(ifunit,*) tsvectorset
     else
-      write(100) tsvectorset
+      write(ifunit) tsvectorset
     end if
     if(tsvectorset) then
-      call write_separator(100,"TS-vector")
+      call write_separator(ifunit,"TS-vector")
       if(tchkform) then
-        write(100,*) tsmode,tsvector
+        write(ifunit,*) tsmode,tsvector
       else
-        write(100) tsmode,tsvector
+        write(ifunit) tsmode,tsvector
       end if
     end if
-    call write_separator(100,"END")
+    call write_separator(ifunit,"END")
 
 ! ======================================================================
 ! Wrong optimisation type setting
@@ -733,34 +742,34 @@ subroutine dlf_checkpoint_formstep_write
   end select
   
   ! close dlf_formstep.chk
-  close(100)
+  close(ifunit)
 
 ! ======================================================================
 ! Write Hessian Data
 ! ======================================================================
   if(allocated(glob%ihessian)) then
     if(tchkform) then
-      open(unit=100,file="dlf_hessian.chk",form="formatted")
-      call write_separator(100,"Hessian size")
-      write(100,*) nihvar
-      call write_separator(100,"Hessian data")
-      write(100,*) glob%havehessian,fd_hess_running,iivar,direction,storeenergy,iupd,fracrec,numfd
-      call write_separator(100,"Hessian arrays")
-      write(100,*) glob%ihessian,oldc,oldgrad
-      if(allocated(storegrad)) write(100,*) storegrad
-      call write_separator(100,"END")
-      close(100)
+      open(unit=ifunit,file="dlf_hessian.chk",form="formatted")
+      call write_separator(ifunit,"Hessian size")
+      write(ifunit,*) nihvar
+      call write_separator(ifunit,"Hessian data")
+      write(ifunit,*) glob%havehessian,fd_hess_running,iivar,direction,storeenergy,iupd,fracrec,numfd
+      call write_separator(ifunit,"Hessian arrays")
+      write(ifunit,*) glob%ihessian,oldc,oldgrad
+      if(allocated(storegrad)) write(ifunit,*) storegrad
+      call write_separator(ifunit,"END")
+      close(ifunit)
     else
-      open(unit=100,file="dlf_hessian.chk",form="unformatted")
-      call write_separator(100,"Hessian size")
-      write(100) nihvar
-      call write_separator(100,"Hessian data")
-      write(100) glob%havehessian,fd_hess_running,iivar,direction,storeenergy,iupd,fracrec,numfd
-      call write_separator(100,"Hessian arrays")
-      write(100) glob%ihessian,oldc,oldgrad
-      if(allocated(storegrad)) write(100) storegrad
-      call write_separator(100,"END")
-      close(100)
+      open(unit=ifunit,file="dlf_hessian.chk",form="unformatted")
+      call write_separator(ifunit,"Hessian size")
+      write(ifunit) nihvar
+      call write_separator(ifunit,"Hessian data")
+      write(ifunit) glob%havehessian,fd_hess_running,iivar,direction,storeenergy,iupd,fracrec,numfd
+      call write_separator(ifunit,"Hessian arrays")
+      write(ifunit) glob%ihessian,oldc,oldgrad
+      if(allocated(storegrad)) write(ifunit) storegrad
+      call write_separator(ifunit,"END")
+      close(ifunit)
     end if
   end if
 
@@ -779,6 +788,7 @@ subroutine dlf_checkpoint_formstep_read(tok)
   logical             :: tchk
   integer             :: var
   logical             :: alloc_tscoords,alloc_tsmode_r
+  integer, parameter  :: ifunit = 104
 ! **********************************************************************
   tok=.false.
 
@@ -791,28 +801,28 @@ subroutine dlf_checkpoint_formstep_read(tok)
   
   ! open the checkpoint file
   if(tchkform) then
-    open(unit=100,file="dlf_formstep.chk",form="formatted")
+    open(unit=ifunit,file="dlf_formstep.chk",form="formatted")
   else
-    open(unit=100,file="dlf_formstep.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_formstep.chk",form="unformatted")
   end if
 
 ! Data for dlf_formstep_set_tsmode
-  call read_separator(100,"TSMODE",tchk)
+  call read_separator(ifunit,"TSMODE",tchk)
   if(tchk) then
 
     ! read allocation status and data
     if(tchkform) then
-      read(100,*,end=201,err=200) alloc_tscoords,alloc_tsmode_r,tenergy
+      read(ifunit,*,end=201,err=200) alloc_tscoords,alloc_tsmode_r,tenergy
     else
-      read(100,end=201,err=200) alloc_tscoords,alloc_tsmode_r,tenergy
+      read(ifunit,end=201,err=200) alloc_tscoords,alloc_tsmode_r,tenergy
     end if
 
     if(alloc_tscoords) then
       if(.not.allocated(tscoords)) call allocate(tscoords,glob%nvar)
       if(tchkform) then
-        read(100,*,end=201,err=200) tscoords(:)
+        read(ifunit,*,end=201,err=200) tscoords(:)
       else
-        read(100,end=201,err=200) tscoords(:)
+        read(ifunit,end=201,err=200) tscoords(:)
       end if
     else
       if(allocated(tscoords)) call deallocate(tscoords)
@@ -821,9 +831,9 @@ subroutine dlf_checkpoint_formstep_read(tok)
     if(alloc_tsmode_r) then
       if(.not.allocated(tsmode_r)) call allocate(tsmode_r,glob%nvar)
       if(tchkform) then
-        read(100,*,end=201,err=200) tsmode_r(:)
+        read(ifunit,*,end=201,err=200) tsmode_r(:)
       else
-        read(100,end=201,err=200) tsmode_r(:)
+        read(ifunit,end=201,err=200) tsmode_r(:)
       end if
     else
       if (allocated(tsmode_r)) call deallocate(tsmode_r)
@@ -831,21 +841,21 @@ subroutine dlf_checkpoint_formstep_read(tok)
 
     if(tenergy) then
       if(tchkform) then
-        read(100,*,end=201,err=200) energy
+        read(ifunit,*,end=201,err=200) energy
       else
-        read(100,end=201,err=200) energy
+        read(ifunit,end=201,err=200) energy
       end if
     end if
 
-    call read_separator(100,"END TSM",tchk)
+    call read_separator(ifunit,"END TSM",tchk)
     if(.not.tchk) return
 
   else
     ! the checkpoint file has to be reopened
     if(tchkform) then
-      open(unit=100,file="dlf_formstep.chk",form="formatted")
+      open(unit=ifunit,file="dlf_formstep.chk",form="formatted")
     else
-      open(unit=100,file="dlf_formstep.chk",form="unformatted")
+      open(unit=ifunit,file="dlf_formstep.chk",form="unformatted")
     end if
   end if
 
@@ -864,18 +874,18 @@ subroutine dlf_checkpoint_formstep_read(tok)
 ! ======================================================================
   case (1:2,30)
 
-    call read_separator(100,"CG-Arrays",tchk)
+    call read_separator(ifunit,"CG-Arrays",tchk)
     if(.not.tchk) return 
     
     if(tchkform) then
-      read(100,*,end=201,err=200) cgstep,fricm
-      read(100,*,end=201,err=200) oldg1,g1,oldcoords
+      read(ifunit,*,end=201,err=200) cgstep,fricm
+      read(ifunit,*,end=201,err=200) oldg1,g1,oldcoords
     else
-      read(100,end=201,err=200) cgstep,fricm
-      read(100,end=201,err=200) oldg1,g1,oldcoords
+      read(ifunit,end=201,err=200) cgstep,fricm
+      read(ifunit,end=201,err=200) oldg1,g1,oldcoords
     end if
 
-    call read_separator(100,"END",tchk)
+    call read_separator(ifunit,"END",tchk)
     if(.not.tchk) return
 
 ! ======================================================================
@@ -889,26 +899,26 @@ subroutine dlf_checkpoint_formstep_read(tok)
 ! P-RFO
   case (10)
 
-    call read_separator(100,"TS-vectorset",tchk)
+    call read_separator(ifunit,"TS-vectorset",tchk)
     if(.not.tchk) return 
 
     if(tchkform) then
-      read(100,*,end=201,err=200) tsvectorset
+      read(ifunit,*,end=201,err=200) tsvectorset
     else
-      read(100,end=201,err=200) tsvectorset
+      read(ifunit,end=201,err=200) tsvectorset
     end if
 
     if(tsvectorset) then
-      call read_separator(100,"TS-vector",tchk)
+      call read_separator(ifunit,"TS-vector",tchk)
       if(.not.tchk) return 
 
       if(tchkform) then
-        read(100,*,end=201,err=200) tsmode,tsvector
+        read(ifunit,*,end=201,err=200) tsmode,tsvector
       else
-        read(100,end=201,err=200) tsmode,tsvector
+        read(ifunit,end=201,err=200) tsmode,tsvector
       end if
     end if
-    call read_separator(100,"END",tchk)
+    call read_separator(ifunit,"END",tchk)
     if(.not.tchk) return
 
 ! ======================================================================
@@ -921,7 +931,7 @@ subroutine dlf_checkpoint_formstep_read(tok)
   end select
 
   ! close dlf_formstep.chk
-  close(100)
+  close(ifunit)
 
 ! ======================================================================
 ! Read Hessian Data
@@ -935,56 +945,56 @@ subroutine dlf_checkpoint_formstep_read(tok)
       return
     end if
     if(tchkform) then
-      open(unit=100,file="dlf_hessian.chk",form="formatted")
+      open(unit=ifunit,file="dlf_hessian.chk",form="formatted")
     else
-      open(unit=100,file="dlf_hessian.chk",form="unformatted")
+      open(unit=ifunit,file="dlf_hessian.chk",form="unformatted")
     end if
 
-    call read_separator(100,"Hessian size",tchk)
+    call read_separator(ifunit,"Hessian size",tchk)
     if(.not.tchk) return
 
     if(tchkform) then
-      read(100,*,end=201,err=200) var
+      read(ifunit,*,end=201,err=200) var
     else
-      read(100,end=201,err=200) var
+      read(ifunit,end=201,err=200) var
     end if
     if(var/=nihvar) then
       print*,var,nihvar
       write(stdout,10) "Inconsistent Hessian size"
-      close(100)
+      close(ifunit)
       return
     end if
 
-    call read_separator(100,"Hessian data",tchk)
+    call read_separator(ifunit,"Hessian data",tchk)
     if(.not.tchk) return 
 
     if(tchkform) then
-      read(100,*,end=201,err=200) glob%havehessian,fd_hess_running,iivar, &
+      read(ifunit,*,end=201,err=200) glob%havehessian,fd_hess_running,iivar, &
           direction,storeenergy,iupd,fracrec,numfd
     else
-      read(100,end=201,err=200) glob%havehessian,fd_hess_running,iivar, &
+      read(ifunit,end=201,err=200) glob%havehessian,fd_hess_running,iivar, &
           direction,storeenergy,iupd,fracrec,numfd
     end if
 
-    call read_separator(100,"Hessian arrays",tchk)
+    call read_separator(ifunit,"Hessian arrays",tchk)
     if(.not.tchk) return 
 
     if(tchkform) then
-      read(100,*,end=201,err=200) glob%ihessian,oldc,oldgrad
+      read(ifunit,*,end=201,err=200) glob%ihessian,oldc,oldgrad
     else
-      read(100,end=201,err=200) glob%ihessian,oldc,oldgrad
+      read(ifunit,end=201,err=200) glob%ihessian,oldc,oldgrad
     end if
     if(allocated(storegrad)) then
       if(tchkform) then
-        read(100,*,end=201,err=200) storegrad
+        read(ifunit,*,end=201,err=200) storegrad
       else
-        read(100,end=201,err=200) storegrad
+        read(ifunit,end=201,err=200) storegrad
       end if
     end if
-    call read_separator(100,"END",tchk)
+    call read_separator(ifunit,"END",tchk)
     if(.not.tchk) return 
 
-    close(100)
+    close(ifunit)
   end if
 
   tok=.true.

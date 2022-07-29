@@ -133,6 +133,16 @@ subroutine dlf_checkpoint_read(status,tok)
   integer       :: imultistate, needcoupling
   integer       :: po_pop_size
   logical       :: tcoords2
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
+
 ! **********************************************************************
   tok=.false.
 
@@ -144,19 +154,19 @@ subroutine dlf_checkpoint_read(status,tok)
   end if
 
   if(tchkform) then
-    open(unit=100,file="dlf_global.chk",form="formatted")
+    open(unit=ifunit,file="dlf_global.chk",form="formatted")
   else
-    open(unit=100,file="dlf_global.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_global.chk",form="unformatted")
   end if
   
-  call read_separator(100,"Global sizes",tchk)
+  call read_separator(ifunit,"Global sizes",tchk)
   if(.not.tchk) return
   if(tchkform) then
-    read(100,*,end=201,err=200) &
+    read(ifunit,*,end=201,err=200) &
         nvar, iopt, iline, lbfgs_mem, icoord, nivar, nimage, ncons, nconn, &
         imultistate, needcoupling
   else
-    read(100,end=201,err=200) &
+    read(ifunit,end=201,err=200) &
         nvar, iopt, iline, lbfgs_mem, icoord, nivar, nimage, ncons, nconn, &
         imultistate, needcoupling
   end if
@@ -174,7 +184,7 @@ subroutine dlf_checkpoint_read(status,tok)
       end if
     end if
     
-    close(100)
+    close(ifunit)
     return
   end if
   if(iopt/=glob%iopt) then
@@ -189,60 +199,60 @@ subroutine dlf_checkpoint_read(status,tok)
         write(stdout,*) "A solution may be to recompile the current code using integer(8)."
       end if
     end if
-    close(100)
+    close(ifunit)
     return
   end if
   if(iline/=glob%iline) then
     write(stdout,10) "Different line search (iline)"
-    close(100)
+    close(ifunit)
     return
   end if
   if(lbfgs_mem/=glob%lbfgs_mem) then
     write(stdout,10) "Different memory size of L-BFGS"
-    close(100)
+    close(ifunit)
     return
   end if
   if(icoord/=glob%icoord) then
     write(stdout,10) "Different coordinate definition (icoord)"
-    close(100)
+    close(ifunit)
     return
   end if
   if(nivar/=glob%nivar) then
     write(stdout,10) "Different number of internal coordinates"
-    close(100)
+    close(ifunit)
     return
   end if
   if(nimage/=glob%nimage) then
     write(stdout,10) "Different number of images"
-    close(100)
+    close(ifunit)
     return
   end if
   if(ncons/=glob%ncons) then
     write(stdout,10) "Different number of constraints"
-    close(100)
+    close(ifunit)
     return
   end if
   if(nconn/=glob%nconn) then
     write(stdout,10) "Different number of user connections"
-    close(100)
+    close(ifunit)
     return
   end if
   if(imultistate/=glob%imultistate) then
     write(stdout,10) "Different multistate calculation (imultistate)"
-    close(100)
+    close(ifunit)
     return
   end if
   if(needcoupling/=glob%needcoupling) then
     write(stdout,10) "Different multistate calculation (needcoupling)"
-    close(100)
+    close(ifunit)
     return
   end if
     
-  call read_separator(100,"Global parameters",tchk)
+  call read_separator(ifunit,"Global parameters",tchk)
   if(.not.tchk) return
   
   if(tchkform) then
-    read(100,*,end=201,err=200) &
+    read(ifunit,*,end=201,err=200) &
         glob%nat ,printl ,glob%tolerance, glob%energy &
         , glob%oldenergy ,glob%toldenergy ,glob%tinit &
         , glob%tatoms &
@@ -251,7 +261,7 @@ subroutine dlf_checkpoint_read(status,tok)
         , glob%update, glob%maxupd, glob%delta &
         , glob%toldenergy_conv, glob%oldenergy_conv
   else
-    read(100,end=201,err=200) &
+    read(ifunit,end=201,err=200) &
         glob%nat ,printl ,glob%tolerance, glob%energy &
         , glob%oldenergy ,glob%toldenergy ,glob%tinit &
         , glob%tatoms &
@@ -261,66 +271,66 @@ subroutine dlf_checkpoint_read(status,tok)
         , glob%toldenergy_conv, glob%oldenergy_conv
   end if
 
-  call read_separator(100,"XYZ data",tchk)
+  call read_separator(ifunit,"XYZ data",tchk)
   if(.not.tchk) return
 
   if(tchkform) then
-    read(100,*,end=201,err=200) &
+    read(ifunit,*,end=201,err=200) &
         glob%xcoords, glob%xgradient &
         , glob%weight, glob%mass
-    if(glob%tcoords2) read(100,*,end=201,err=200) glob%xcoords2
+    if(glob%tcoords2) read(ifunit,*,end=201,err=200) glob%xcoords2
   else
-    read(100,end=201,err=200) &
+    read(ifunit,end=201,err=200) &
         glob%xcoords, glob%xgradient &
         , glob%weight, glob%mass
-    if(glob%tcoords2) read(100,end=201,err=200) glob%xcoords2
+    if(glob%tcoords2) read(ifunit,end=201,err=200) glob%xcoords2
   end if
 
-  call read_separator(100,"internal c data",tchk)
+  call read_separator(ifunit,"internal c data",tchk)
   if(.not.tchk) return
   
   if(tchkform) then
-    read(100,*,end=201,err=200) &
+    read(ifunit,*,end=201,err=200) &
         glob%icoords, glob%igradient, glob%step, glob%spec, glob%icons &
         , glob%iconn
   else
-    read(100,end=201,err=200) &
+    read(ifunit,end=201,err=200) &
         glob%icoords, glob%igradient, glob%step, glob%spec, glob%icons &
         , glob%iconn
   end if
 
   if (glob%imultistate > 0) then
-     call read_separator(100, "Multistate data", tchk)
+     call read_separator(ifunit, "Multistate data", tchk)
      if (.not. tchk) return
      if (tchkform) then
-        read(100, *, end=201, err=200) &
+        read(ifunit, *, end=201, err=200) &
              glob%state_i, glob%state_j, &
              glob%pf_c1, glob%pf_c2, glob%gp_c3, glob%gp_c4, &
              glob%ln_t1, glob%ln_t2
-        read(100, *, end=201, err=200) &
+        read(ifunit, *, end=201, err=200) &
              glob%msenergy, glob%msgradient, glob%mscoupling
      else
-        read(100, end=201, err=200) &
+        read(ifunit, end=201, err=200) &
              glob%state_i, glob%state_j, &
              glob%pf_c1, glob%pf_c2, glob%gp_c3, glob%gp_c4, &
              glob%ln_t1, glob%ln_t2
-        read(100, end=201, err=200) &
+        read(ifunit, end=201, err=200) &
              glob%msenergy, glob%msgradient, glob%mscoupling
      endif
   end if
 
   if (glob%iopt/10 == 5) then
-     call read_separator(100, "Parallel opt data", tchk)
+     call read_separator(ifunit, "Parallel opt data", tchk)
      if (.not. tchk) return
      if (tchkform) then
-        read(100, *, end=201, err=200) &
+        read(ifunit, *, end=201, err=200) &
              po_pop_size, glob%po_radius_base, &
              glob%po_contraction, glob%po_tol_r_base, glob%po_tolerance_g, &
              glob%po_distribution, glob%po_maxcycle, glob%po_init_pop_size, &
              glob%po_reset, glob%po_mutation_rate, glob%po_death_rate, &
              glob%po_scalefac, glob%po_nsave
      else
-        read(100, end=201, err=200) &
+        read(ifunit, end=201, err=200) &
              po_pop_size, glob%po_radius_base, &
              glob%po_contraction, glob%po_tol_r_base, glob%po_tolerance_g, &
              glob%po_distribution, glob%po_maxcycle, glob%po_init_pop_size, &
@@ -329,36 +339,36 @@ subroutine dlf_checkpoint_read(status,tok)
      endif
      if (po_pop_size /= glob%po_pop_size) then
         write(stdout,10) "Different population size"
-        close(100)
+        close(ifunit)
         return
      end if
   end if
 
-  call read_separator(100,"stat module",tchk)
+  call read_separator(ifunit,"stat module",tchk)
   if(.not.tchk) return
 
   if(tchkform) then
-    read(100,*,end=201,err=200) stat
+    read(ifunit,*,end=201,err=200) stat
   else
-    read(100,end=201,err=200) stat
+    read(ifunit,end=201,err=200) stat
   end if
 
-  call read_separator(100,"status",tchk)
+  call read_separator(ifunit,"status",tchk)
   if(.not.tchk) return
 
   if(tchkform) then
-    read(100,*,end=201,err=200) status
+    read(ifunit,*,end=201,err=200) status
   else
-    read(100,end=201,err=200) status
+    read(ifunit,end=201,err=200) status
   end if
 
-  call read_separator(100,"END",tchk)
+  call read_separator(ifunit,"END",tchk)
   if(.not.tchk) return
 
   if(printl >= 4) write(stdout,"('Global checkpoint file successfully read')")
 
   tok=.true.
-  close(100)
+  close(ifunit)
 
   call dlf_checkpoint_coords_read(tok)
   if(.not.tok) return
@@ -372,7 +382,7 @@ subroutine dlf_checkpoint_read(status,tok)
   return
 
   ! return on error
-  close(100)
+  close(ifunit)
 200 continue
   write(stdout,10) "Error reading global checkpoint file"
   return
@@ -397,10 +407,11 @@ subroutine dlf_checkpoint_write(status)
   use dlf_parameter_module, only: rk
   use dlf_global, only: glob,printl
   use dlf_stat, only: stat
-  use dlf_checkpoint, only: tchkform,write_separator
+  use dlf_checkpoint, only: tchkform, write_separator
   implicit none
   integer, intent(in) :: status
   character(20) :: separator
+  integer, parameter :: ifunit = 104
 ! **********************************************************************
 
 ! Only want one processor to do the writing; that processor must know 
@@ -419,14 +430,14 @@ subroutine dlf_checkpoint_write(status)
   ! NB: File names would have to be labelled by workgroup too 
   ! as we cannot assume each has its own scratch directory.
   if(tchkform) then
-    open(unit=100,file="dlf_global.chk",form="formatted")
-    call write_separator(100,"Global sizes")
-    write(100,*) &
+    open(unit=ifunit,file="dlf_global.chk",form="formatted")
+    call write_separator(ifunit,"Global sizes")
+    write(ifunit,*) &
         glob%nvar, glob%iopt, glob%iline, glob%lbfgs_mem, glob%icoord, &
         glob%nivar, glob%nimage, glob%ncons, glob%nconn, &
         glob%imultistate, glob%needcoupling
-    call write_separator(100,"Global parameters")
-    write(100,*) &
+    call write_separator(ifunit,"Global parameters")
+    write(ifunit,*) &
         glob%nat ,printl ,glob%tolerance, glob%energy &
         , glob%oldenergy ,glob%toldenergy ,glob%tinit &
         , glob%tatoms &
@@ -434,45 +445,45 @@ subroutine dlf_checkpoint_write(status)
         , glob%taccepted, glob%nebk &
         , glob%update, glob%maxupd, glob%delta &
         , glob%toldenergy_conv, glob%oldenergy_conv
-    call write_separator(100,"XYZ data")
-    write(100,*) glob%xcoords, glob%xgradient &
+    call write_separator(ifunit,"XYZ data")
+    write(ifunit,*) glob%xcoords, glob%xgradient &
         , glob%weight, glob%mass
-    if(glob%tcoords2)  write(100,*) glob%xcoords2
-    call write_separator(100,"internal c data")
-    write(100,*) glob%icoords, glob%igradient, glob%step, glob%spec &
+    if(glob%tcoords2)  write(ifunit,*) glob%xcoords2
+    call write_separator(ifunit,"internal c data")
+    write(ifunit,*) glob%icoords, glob%igradient, glob%step, glob%spec &
         , glob%icons, glob%iconn
     if (glob%imultistate > 0) then
-       call write_separator(100,"Multistate data")
-       write(100,*) glob%state_i, glob%state_j, &
+       call write_separator(ifunit,"Multistate data")
+       write(ifunit,*) glob%state_i, glob%state_j, &
             glob%pf_c1, glob%pf_c2, glob%gp_c3, glob%gp_c4, &
             glob%ln_t1, glob%ln_t2
-       write(100,*) &
+       write(ifunit,*) &
             glob%msenergy, glob%msgradient, glob%mscoupling 
     endif
     if (glob%iopt/10 == 5) then
-       call write_separator(100, "Parallel opt data")
-       write(100, *) &
+       call write_separator(ifunit, "Parallel opt data")
+       write(ifunit, *) &
             glob%po_pop_size, glob%po_radius_base, &
             glob%po_contraction, glob%po_tol_r_base, glob%po_tolerance_g, &
             glob%po_distribution, glob%po_maxcycle, glob%po_init_pop_size, &
             glob%po_reset, glob%po_mutation_rate, glob%po_death_rate, &
             glob%po_scalefac, glob%po_nsave
     end if
-    call write_separator(100,"stat module")
-    write(100,*) stat
-    call write_separator(100,"status")
-    write(100,*) status
-    call write_separator(100,"END")
+    call write_separator(ifunit,"stat module")
+    write(ifunit,*) stat
+    call write_separator(ifunit,"status")
+    write(ifunit,*) status
+    call write_separator(ifunit,"END")
 
   else
-    open(unit=100,file="dlf_global.chk",form="unformatted")
-    call write_separator(100,"Global sizes")
-    write(100) &
+    open(unit=ifunit,file="dlf_global.chk",form="unformatted")
+    call write_separator(ifunit,"Global sizes")
+    write(ifunit) &
         glob%nvar, glob%iopt, glob%iline, glob%lbfgs_mem, glob%icoord, &
         glob%nivar, glob%nimage, glob%ncons, glob%nconn, &
        glob%imultistate, glob%needcoupling
-    call write_separator(100,"Global parameters")
-    write(100) &
+    call write_separator(ifunit,"Global parameters")
+    write(ifunit) &
         glob%nat ,printl ,glob%tolerance, glob%energy &
         , glob%oldenergy ,glob%toldenergy ,glob%tinit &
         , glob%tatoms &
@@ -480,38 +491,38 @@ subroutine dlf_checkpoint_write(status)
         , glob%taccepted, glob%nebk &
         , glob%update, glob%maxupd, glob%delta &
         , glob%toldenergy_conv, glob%oldenergy_conv
-    call write_separator(100,"XYZ data")
-    write(100) glob%xcoords, glob%xgradient &
+    call write_separator(ifunit,"XYZ data")
+    write(ifunit) glob%xcoords, glob%xgradient &
         , glob%weight, glob%mass
-    if(glob%tcoords2) write(100) glob%xcoords2
-    call write_separator(100,"internal c data")
-    write(100) glob%icoords, glob%igradient, glob%step, glob%spec &
+    if(glob%tcoords2) write(ifunit) glob%xcoords2
+    call write_separator(ifunit,"internal c data")
+    write(ifunit) glob%icoords, glob%igradient, glob%step, glob%spec &
         , glob%icons, glob%iconn
     if (glob%imultistate > 0) then
-       call write_separator(100,"Multistate data")
-       write(100) glob%state_i, glob%state_j, &
+       call write_separator(ifunit,"Multistate data")
+       write(ifunit) glob%state_i, glob%state_j, &
             glob%pf_c1, glob%pf_c2, glob%gp_c3, glob%gp_c4, &
             glob%ln_t1, glob%ln_t2
-       write(100) &
+       write(ifunit) &
             glob%msenergy, glob%msgradient, glob%mscoupling 
     endif
     if (glob%iopt/10 == 5) then
-       call write_separator(100, "Parallel opt data")
-       write(100) &
+       call write_separator(ifunit, "Parallel opt data")
+       write(ifunit) &
             glob%po_pop_size, glob%po_radius_base, &
             glob%po_contraction, glob%po_tol_r_base, glob%po_tolerance_g, &
             glob%po_distribution, glob%po_maxcycle, glob%po_init_pop_size, &
             glob%po_reset, glob%po_mutation_rate, glob%po_death_rate, &
             glob%po_scalefac, glob%po_nsave
     end if
-    call write_separator(100,"stat module")
-    write(100) stat
-    call write_separator(100,"status")
-    write(100) status
-    call write_separator(100,"END")
+    call write_separator(ifunit,"stat module")
+    write(ifunit) stat
+    call write_separator(ifunit,"status")
+    write(ifunit) status
+    call write_separator(ifunit,"END")
   end if
 
-  close(100)
+  close(ifunit)
 
   call dlf_checkpoint_coords_write
   call dlf_checkpoint_formstep_write

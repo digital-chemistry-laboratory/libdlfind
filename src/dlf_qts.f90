@@ -1560,7 +1560,7 @@ subroutine dlf_qts_get_hessian(trerun_energy)
   real(rk),allocatable   :: mass(:)
   logical                :: was_updated,tokmass
   integer                :: fromimg,startimg,endimg,iat
-  real(rk)               :: svar,arr2(2)
+  real(rk)               :: svar,sarr(1),arr2(2)
   character(64)          :: label
   !**********************************************************************
   fracrecalc=.false.
@@ -1793,7 +1793,9 @@ subroutine dlf_qts_get_hessian(trerun_energy)
       ! to be communicated to the tasks:
       if(.not.fd_hess_running.and.glob%ntasks>0.and.taskfarm_mode==1) then
         call dlf_tasks_real_sum(glob%xgradient, glob%nvar)
-        call dlf_tasks_real_sum(glob%energy, 1)
+        sarr(1) = glob%energy
+        call dlf_tasks_real_sum(sarr, 1)
+        glob%energy = sarr(1)
       end if
 
       ! reduce print level in dlf_fdhessian
@@ -2250,7 +2252,7 @@ subroutine qts_det_tsplitting(nimage,varperimage,dtau_,total_hessian,det_tsplit)
   integer    :: ivar,nvar,iimage,jvar,posi,posj,ival
   real(rk) :: dtau(nimage+1)
   real(rk) :: hess_rs(neb%varperimage,neb%varperimage)
-  real(rk) :: arr2(2),svar,mass(glob%nat) ! scratch
+  real(rk) :: arr2(2),svar,mass(glob%nat),sarr(1) ! scratch
 !  real(rk) :: evals_rs( neb%varperimage * neb%nimage )
   logical :: tok
 
@@ -2366,7 +2368,7 @@ subroutine qts_det_tsplitting(nimage,varperimage,dtau_,total_hessian,det_tsplit)
   ! get the whole hessian of the reactant
   ivar=1 ! nimage
   call read_qts_hessian(glob%nat,ivar,neb%varperimage,svar,&
-      svar,glob%xcoords,hess_rs,svar,arr2,mass,"rs",tok)
+      sarr,glob%xcoords,hess_rs,svar,arr2,mass,"rs",tok)
   if(.not.tok) then
     if(printl>=2) write(stdout,*) "Warning: full reactant state Hessian not available (qts_hessian_rs.txt)"
     det_tsplit=0.D0
@@ -3090,6 +3092,7 @@ subroutine qts_reactant(qrs,ers,qrot,tbimol,tok)
   integer :: ivar,iimage,varperimage_read,icount
   real(rk) :: svar,mass_bimol
   real(rk) :: qrsi,dtau
+  real(rk) :: sarr(1) ! For passing arrays to scalar
   !real(rk) :: arr2(2) ! scratch
   !real(rk) :: evals_rs( 2 * neb%varperimage * neb%nimage )
   !real(rk) :: hess_rs(neb%varperimage,neb%varperimage) 
@@ -3145,7 +3148,8 @@ subroutine qts_reactant(qrs,ers,qrot,tbimol,tok)
     
     nimage_read=1
     call read_qts_hessian(glob%nat,nimage_read,varperimage_read,temperature,&
-        ers,xcoords,ihessian,etunnel,dist,mass_file,"rs",tok)
+        sarr,xcoords,ihessian,etunnel,dist,mass_file,"rs",tok)
+    ers = sarr(1)
     
     if(.not.tok.and.nimage_read==1) then
       ! check for bimolecular case
@@ -3172,7 +3176,8 @@ subroutine qts_reactant(qrs,ers,qrot,tbimol,tok)
         call allocate(xcoords,3*natr)
 
         call read_qts_hessian(natr,nimage_read,varperimager,temperature,&
-            ers,xcoords,ihessian,etunnel,dist,mass_file,"rs",tok)
+            sarr,xcoords,ihessian,etunnel,dist,mass_file,"rs",tok)
+        ers = sarr(1)
         ! check for tok
 
         mass_bimol=sum(mass_file)
@@ -3195,7 +3200,8 @@ subroutine qts_reactant(qrs,ers,qrot,tbimol,tok)
         call allocate(xcoords,3*natr2)
 
         call read_qts_hessian(natr2,nimage_read,varperimager2,temperature,&
-            ers2,xcoords,ihessian,etunnel,dist,mass_file,"rs2",tok)
+            sarr,xcoords,ihessian,etunnel,dist,mass_file,"rs2",tok)
+        ers2 = sarr(1)
         ! check for tok
 
         svar=sum(mass_file)
@@ -3617,6 +3623,15 @@ subroutine read_qts_coords(nat,nimage,varperimage,temperature,&
   logical :: there
   integer :: nat_,nimage_,varperimage_,ios
   character(128) :: line,filename
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
 
   ene=0.D0
   xcoords=0.D0
@@ -3673,7 +3688,7 @@ subroutine read_qts_coords(nat,nimage,varperimage,temperature,&
   return
 
   ! return on error
-  close(100)
+  close(ifunit)
 200 continue
   call dlf_fail("Error reading qts_coords.txt file")
   write(stdout,10) "Error reading file"
@@ -4034,6 +4049,7 @@ subroutine read_qts_reactant(nat,varperimage,&
   real(8)  :: svar
   character(128) :: filename
 
+  integer, parameter :: ifunit = 104
   ene=huge(1.D0)
   tok=.false.
 
@@ -4127,7 +4143,7 @@ subroutine read_qts_reactant(nat,varperimage,&
   return
 
   ! return on error
-  close(100)
+  close(ifunit)
 200 continue
   !call dlf_fail("Error reading qts_reactant.txt file")
   write(stdout,10) "Error reading file"
@@ -4161,6 +4177,7 @@ subroutine head_qts_reactant(nat,varperimage,label,tok)
   logical  :: there
   character(128) :: filename
 
+  integer, parameter :: ifunit = 104
   tok=.false.
 
   ! find file name
@@ -4186,7 +4203,7 @@ subroutine head_qts_reactant(nat,varperimage,label,tok)
   return
 
   ! return on error
-  close(100)
+  close(ifunit)
 200 continue
   call dlf_fail("Error reading qts_reactant.txt file")
   write(stdout,10) "Error reading file"
@@ -4295,6 +4312,7 @@ subroutine dlf_htst_rate
   integer   :: varperimager2,natr2
   real(rk)  :: ene_rs2
   real(rk), allocatable :: eigvals_rs2(:)
+  real(rk) :: sarr(1) ! For passing arrays to scalar
   character(128) :: filename
 
   if(glob%iam > 0 ) return ! only task zero should do this (task farming does
@@ -4384,7 +4402,8 @@ subroutine dlf_htst_rate
 
     nimage_read=1
     call read_qts_hessian(natr,nimage_read,varperimager,temperature,&
-        ene_rs,xcoords,ihessian,etunnel,dist,mass_file,"rs",tok)
+        sarr,xcoords,ihessian,etunnel,dist,mass_file,"rs",tok)
+    ene_rs = sarr(1)
     
     if(.not.tok) call dlf_fail("Error reading reactant from Hessian file.")
     if(nimage_read/=1) call dlf_fail("Wrong number of images for RS.")
@@ -4415,7 +4434,7 @@ subroutine dlf_htst_rate
 
     ! write hessian and qts_reactant file for later use?
     call write_qts_hessian(natr,nimage_read,varperimager,-1.D0,&
-        ene_rs,xcoords,ihessian,etunnel,dist,"rs_mass")
+        (/ene_rs/),xcoords,ihessian,etunnel,dist,"rs_mass")
 
     call deallocate(ihessian)
     call deallocate(evecs)
@@ -4456,7 +4475,8 @@ subroutine dlf_htst_rate
 
     nimage_read=1
     call read_qts_hessian(natr,nimage_read,varperimager,temperature,&
-        ene_rs,xcoords,ihessian,etunnel,dist,mass_file,"rs",tok)
+        sarr,xcoords,ihessian,etunnel,dist,mass_file,"rs",tok)
+    ene_rs = sarr(1)
 
     mu_bim=sum(mass_file)
     
@@ -4495,7 +4515,8 @@ subroutine dlf_htst_rate
 
     nimage_read=1
     call read_qts_hessian(natr2,nimage_read,varperimager2,temperature,&
-        ene_rs2,xcoords,ihessian,etunnel,dist,mass_file,"rs2",tok)
+        sarr,xcoords,ihessian,etunnel,dist,mass_file,"rs2",tok)
+    ene_rs2 = sarr(1)
     
     if(.not.tok) call dlf_fail("Error reading reactant from Hessian rs2 file.")
     if(nimage_read/=1) call dlf_fail("Wrong number of images for RS2.")
@@ -4575,7 +4596,8 @@ subroutine dlf_htst_rate
 
     nimage_read=1
     call read_qts_hessian(nat,nimage_read,varperimage,temperature,&
-        ene_ts,xcoords,ihessian,etunnel,dist,mass_file,"ts",tok)
+        sarr,xcoords,ihessian,etunnel,dist,mass_file,"ts",tok)
+    ene_ts = sarr(1)
     
     if(.not.tok) call dlf_fail("Error reading TS from Hessian file.")
     if(nimage_read/=1) call dlf_fail("Wrong number of images for TS.")
@@ -4606,7 +4628,7 @@ subroutine dlf_htst_rate
 
     ! write hessian and qts_reactant file for later use?
     call write_qts_hessian(nat,nimage_read,varperimage,-1.D0,&
-        ene_ts,xcoords,ihessian,etunnel,dist,"ts_mass")
+        (/ene_ts/),xcoords,ihessian,etunnel,dist,"ts_mass")
 
     call deallocate(ihessian)
     call deallocate(evecs)

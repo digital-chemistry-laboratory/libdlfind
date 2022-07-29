@@ -429,28 +429,28 @@ subroutine dlf_run( &
     if(printf>=3) then
       if(stat%sene>0) THEN
         if (glob%iam == 0) then
-          open(unit=30,file="path.xyz",position="APPEND")
-          open(unit=31,file="path_active.xyz",position="APPEND")
+          open(unit=330,file="path.xyz",position="APPEND")
+          open(unit=331,file="path_active.xyz",position="APPEND")
           ! Only open for TS search methods
           if (glob%iopt == 10 .or. (glob%icoord >= 100 .and. glob%icoord < 300)) then
-             open(unit=32,file="path_tsmode.xyz",position="APPEND")
+             open(unit=332,file="path_tsmode.xyz",position="APPEND")
           end if
           ! Only for microiterative optimisations
           if (glob%imicroiter > 0) then
-             open(unit=33,file="path_micro.xyz",position="APPEND")
+             open(unit=333,file="path_micro.xyz",position="APPEND")
           end if
         end if
       ELSE
         if (glob%iam == 0) then
-          open(unit=30,file="path.xyz")
-          open(unit=31,file="path_active.xyz")
+          open(unit=330,file="path.xyz")
+          open(unit=331,file="path_active.xyz")
           ! Only open for TS search methods
           if (glob%iopt == 10 .or. (glob%icoord >= 100 .and. glob%icoord < 300)) then
-             open(unit=32,file="path_tsmode.xyz")
+             open(unit=332,file="path_tsmode.xyz")
           end if
           ! Only for microiterative optimisations
           if (glob%imicroiter > 0) then
-             open(unit=33,file="path_micro.xyz")
+             open(unit=333,file="path_micro.xyz")
           end if
         end if
       end if
@@ -467,8 +467,8 @@ subroutine dlf_run( &
     call clock_stop("XYZ")
   else
     if (glob%iam == 0) then
-       open(unit=30,file="path.inc")
-       !open(unit=30,file="path.inc",position="append")
+       open(unit=330,file="path.inc")
+       !open(unit=330,file="path.inc",position="append")
     end if
   end if
 
@@ -786,12 +786,12 @@ subroutine dlf_run( &
       if (glob%imicroiter < 2) then
          ! Write out standard optimisation cycles
          ! and macroiterative steps
-         call write_xyz(30,glob%nat,glob%znuc,glob%xcoords)
-         call write_xyz_active(31,glob%nat,glob%znuc,glob%spec,glob%xcoords)
+         call write_xyz(330,glob%nat,glob%znuc,glob%xcoords)
+         call write_xyz_active(331,glob%nat,glob%znuc,glob%spec,glob%xcoords)
       end if
       if (glob%imicroiter > 0) then
          ! Full microiterative opt path including microiterative steps
-         call write_xyz(33,glob%nat,glob%znuc,glob%xcoords)
+         call write_xyz(333,glob%nat,glob%znuc,glob%xcoords)
       endif
     end if
 
@@ -1005,12 +1005,12 @@ subroutine dlf_run( &
 
   ! close trajectory files
   if(printf>=3 .and. glob%iam == 0) then
-    close(30)
-    close(31)
+    close(330)
+    close(331)
     if (glob%iopt == 10 .or. (glob%icoord >= 100 .and. glob%icoord < 300)) then
-       close(32)
+       close(332)
     end if
-    if (glob%imicroiter > 0) close(33)
+    if (glob%imicroiter > 0) close(333)
   end if
   ! close force trajectory files
   if(printf>=4.and.glob%iam == 0) then
@@ -1020,19 +1020,19 @@ subroutine dlf_run( &
   ! again some rubbish for printing ...
   if(glob%icoord/100==1.and..not.glob%tatoms) then
     if (glob%iam == 0) then
-       open(unit=30,file="path.inc")
+       open(unit=330,file="path.inc")
        do ivar=1,glob%nimage
-         write(30,"('sphere{<',f12.4,',',f12.4,',',f12.4,'> 0.04}')") &
+         write(330,"('sphere{<',f12.4,',',f12.4,',',f12.4,'> 0.04}')") &
              glob%icoords(ivar*2-1),1.D0,glob%icoords(ivar*2)
          if(ivar>1) then
-           write(30,"('cylinder{<',f12.4,',',f12.4,',',f12.4,'>,"//&
+           write(330,"('cylinder{<',f12.4,',',f12.4,',',f12.4,'>,"//&
                &"<',f12.4,',',f12.4,',',f12.4,'> 0.01} ')") &
                glob%icoords(ivar*2-1),1.D0,glob%icoords(ivar*2), &
                glob%icoords((ivar-1)*2-1),1.D0,glob%icoords((ivar-1)*2)
          end if
        end do
 
-       close(30)
+       close(330)
     end if
   end if
 
@@ -1232,6 +1232,8 @@ subroutine dlf_allocate_glob(nvarin,nvarin2,nvarspec, &
     call allocate( glob%xgradient,1,nvarin)
     ! NOT TO BE USED
     call allocate( glob%spec,1)
+    ! 02/03/2020
+    glob%spec = 0
     call allocate( glob%icons,5,1)
     glob%icons(:,:)=0
     call allocate( glob%znuc,1)
@@ -1275,7 +1277,10 @@ subroutine dlf_deallocate_glob
   call deallocate( glob%icons )
   call deallocate( glob%znuc  )
   call deallocate( glob%iconn )
-  call deallocate(glob%micspec)
+  ! YL 02/03/2020
+  if(allocated(glob%micspec)) then
+      call deallocate(glob%micspec)
+  endif
 
   call deallocate( glob%mass )
   call deallocate( glob%weight )
@@ -1292,9 +1297,16 @@ subroutine dlf_deallocate_glob
   ! parallel optimisation algorithms
   if (glob%iopt/10==5) call deallocate(glob%po_radius_scaling)
 
-  call deallocate(glob%macrocoords)
-  call deallocate(glob%g0corr)
-  call deallocate(glob%e0corr)
+  ! YL 02/03/2020
+  if(allocated(glob%macrocoords)) then
+      call deallocate(glob%macrocoords)
+  endif
+  if(allocated(glob%g0corr)) then
+      call deallocate(glob%g0corr)
+  endif
+  if(allocated(glob%e0corr)) then
+      call deallocate(glob%e0corr)
+  endif
 
 end subroutine dlf_deallocate_glob
 !!****
@@ -1766,13 +1778,14 @@ subroutine dlf_printheader
 !! SOURCE
   use dlf_global, only: stdout
   implicit none
-  character(50)   :: svn_v
-  call dlf_svnversion(svn_v)
-  if(svn_v=="") then
-    ! svn not available, use the revision number of this file
-    svn_v="$Revision$"
-    svn_v= svn_v(11:)
-  end if
+! TWK 21/12/2021 DL-FIND is no longer stored in an SVN repository
+!  character(50)   :: svn_v
+!  call dlf_svnversion(svn_v)
+!  if(svn_v=="") then
+!    ! svn not available, use the revision number of this file
+!    svn_v="$Revision$"
+!    svn_v= svn_v(11:)
+!  end if
 
   write(stdout,'(/a)') &
       "***********************************************************************"      
@@ -1807,7 +1820,7 @@ subroutine dlf_printheader
 !                    g  f  e  d  c  b  a  C  a  b  c  d  e  f  g
 !  write(stdout,'(a)') &
 !      "**                          $Revision$                         **"      
-  write(stdout,'("**",27x,"Revision: ",a30,"**")') svn_v
+!  write(stdout,'("**",27x,"Revision: ",a30,"**")') svn_v
   write(stdout,'(a)') &
       "**                                                                   **"      
   write(stdout,'(a/)') &

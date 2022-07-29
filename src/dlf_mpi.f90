@@ -441,6 +441,7 @@ subroutine dlf_mpi_memory(sto,maxsto)
      write(stdout,1000) "Lowest",dble(lowest_stored)/1024.D0
      write(stdout,1000) "Highest",dble(highest_stored)/1024.D0
      write(stdout,'(a)')"Task-farming statistics: end"
+     call flush(stdout)
 
   end if
 

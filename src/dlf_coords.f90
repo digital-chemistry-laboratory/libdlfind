@@ -160,7 +160,8 @@ subroutine dlf_coords_init
        glob%iweight(glob%nivar - 1:glob%nivar) = 1.0d0
        ivar = ivar + 2
     endif
-    if(ivar-1/=glob%nivar) then
+    ! YL 06/02/2021: only check this for atom mode now (we haven't used weights for parameterisation)
+    if(ivar-1/=glob%nivar.and.glob%tatoms) then
       call dlf_fail("Error in cartesian iweight calculation")
     end if
 

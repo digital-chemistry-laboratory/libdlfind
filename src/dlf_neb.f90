@@ -1154,7 +1154,7 @@ subroutine dlf_neb_improved_tangent_neb
   ! ====================================================================
   ! write some report
   ! ====================================================================
-  if(printl>=4) then
+  if(printl>=2) then
     write(stdout,"('NEB Report')")
     write(stdout,"('             Energy       F_tang    F_perp     Dist&
         &     Angle 1-3 Ang 1-2 Sum ')")
@@ -2098,37 +2098,46 @@ subroutine dlf_checkpoint_neb_write
   use dlf_neb, only: neb
   use dlf_checkpoint, only: tchkform,write_separator
   implicit none
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
 ! **********************************************************************
   if(tchkform) then
 
-    open(unit=100,file="dlf_neb.chk",form="formatted")
+    open(unit=ifunit,file="dlf_neb.chk",form="formatted")
 
-    call write_separator(100,"NEB Sizes")
-    write(100,*) neb%nimage,neb%varperimage
-    call write_separator(100,"NEB Parameters")
-    write(100,*) neb%iimage,neb%step,neb%maximage,neb%mode,neb%k &
+    call write_separator(ifunit,"NEB Sizes")
+    write(ifunit,*) neb%nimage,neb%varperimage
+    call write_separator(ifunit,"NEB Parameters")
+    write(ifunit,*) neb%iimage,neb%step,neb%maximage,neb%mode,neb%k &
         ,neb%optcart
-    call write_separator(100,"NEB Arrays")
-    write(100,*) neb%ene,neb%frozen,neb%gradt,neb%xcoords,neb%frozen
-    call write_separator(100,"END")
+    call write_separator(ifunit,"NEB Arrays")
+    write(ifunit,*) neb%ene,neb%frozen,neb%gradt,neb%xcoords,neb%frozen
+    call write_separator(ifunit,"END")
 
 
   else
 
-    open(unit=100,file="dlf_neb.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_neb.chk",form="unformatted")
 
-    call write_separator(100,"NEB Sizes")
-    write(100) neb%nimage,neb%varperimage
-    call write_separator(100,"NEB Parameters")
-    write(100) neb%iimage,neb%step,neb%maximage,neb%mode,neb%k &
+    call write_separator(ifunit,"NEB Sizes")
+    write(ifunit) neb%nimage,neb%varperimage
+    call write_separator(ifunit,"NEB Parameters")
+    write(ifunit) neb%iimage,neb%step,neb%maximage,neb%mode,neb%k &
         ,neb%optcart
-    call write_separator(100,"NEB Arrays")
-    write(100) neb%ene,neb%frozen,neb%gradt,neb%xcoords,neb%frozen
-    call write_separator(100,"END")
+    call write_separator(ifunit,"NEB Arrays")
+    write(ifunit) neb%ene,neb%frozen,neb%gradt,neb%xcoords,neb%frozen
+    call write_separator(ifunit,"END")
 
   end if
 
-  close(100)
+  close(ifunit)
     
 end subroutine dlf_checkpoint_neb_write
 
@@ -2142,6 +2151,7 @@ subroutine dlf_checkpoint_neb_read(tok)
   logical,intent(out) :: tok
   logical             :: tchk
   integer             :: nimage,varperimage
+  integer, parameter  :: ifunit = 104
 ! **********************************************************************
   tok=.false.
 
@@ -2153,58 +2163,58 @@ subroutine dlf_checkpoint_neb_read(tok)
   end if
 
   if(tchkform) then
-    open(unit=100,file="dlf_neb.chk",form="formatted")
+    open(unit=ifunit,file="dlf_neb.chk",form="formatted")
   else
-    open(unit=100,file="dlf_neb.chk",form="unformatted")
+    open(unit=ifunit,file="dlf_neb.chk",form="unformatted")
   end if
 
-  call read_separator(100,"NEB Sizes",tchk)
+  call read_separator(ifunit,"NEB Sizes",tchk)
   if(.not.tchk) return    
 
   if(tchkform) then
-    read(100,*,end=201,err=200) nimage,varperimage
+    read(ifunit,*,end=201,err=200) nimage,varperimage
   else
-    read(100,end=201,err=200) nimage,varperimage
+    read(ifunit,end=201,err=200) nimage,varperimage
   end if
 
   if(neb%nimage/=nimage) then
     write(stdout,10) "Different numbers of NEB images"
-    close(100)
+    close(ifunit)
     return
   end if
   
   if(neb%varperimage/=varperimage) then
     write(stdout,10) "Different numbers of variables per NEB image"
-    close(100)
+    close(ifunit)
     return
   end if
   
-  call read_separator(100,"NEB Parameters",tchk)
+  call read_separator(ifunit,"NEB Parameters",tchk)
   if(.not.tchk) return    
 
   if(tchkform) then
-    read(100,*,end=201,err=200) neb%iimage,neb%step, &
+    read(ifunit,*,end=201,err=200) neb%iimage,neb%step, &
         neb%maximage,neb%mode,neb%k,neb%optcart
   else
-    read(100,end=201,err=200) neb%iimage,neb%step, &
+    read(ifunit,end=201,err=200) neb%iimage,neb%step, &
         neb%maximage,neb%mode,neb%k,neb%optcart
   end if
 
-  call read_separator(100,"NEB Arrays",tchk)
+  call read_separator(ifunit,"NEB Arrays",tchk)
   if(.not.tchk) return    
 
   if(tchkform) then
-    read(100,*,end=201,err=200) neb%ene,neb%frozen,neb%gradt &
+    read(ifunit,*,end=201,err=200) neb%ene,neb%frozen,neb%gradt &
         ,neb%xcoords,neb%frozen
   else
-    read(100,end=201,err=200) neb%ene,neb%frozen,neb%gradt &
+    read(ifunit,end=201,err=200) neb%ene,neb%frozen,neb%gradt &
         ,neb%xcoords,neb%frozen
   end if
 
-  call read_separator(100,"END",tchk)
+  call read_separator(ifunit,"END",tchk)
   if(.not.tchk) return
 
-  close(100)
+  close(ifunit)
   tok=.true.
 
   if(printl >= 6) write(stdout,"('NEB checkpoint file successfully read')")
@@ -2212,7 +2222,7 @@ subroutine dlf_checkpoint_neb_read(tok)
   return
 
   ! return on error
-  close(100)
+  close(ifunit)
 200 continue
   write(stdout,10) "Error reading file"
   return

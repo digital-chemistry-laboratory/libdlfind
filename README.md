@@ -326,7 +326,7 @@ if __name__ == "__main__":
 
 ## Background
 
-libdlfind adds a C-compatible API to the original DL-FIND Fortran code. It uses the original code from DL-FIND (downloaded November 2021) in unmodified form and adds three files. 
+libdlfind adds a C-compatible API to the original DL-FIND Fortran code. It uses the original DL-FIND code from Py-ChemShell (v21.0.1) in unmodified form and adds three files:
 
 - api.f90: C-interoperable interface functions
 - mod_api.f90: Abstract interfaces callback functions from C 

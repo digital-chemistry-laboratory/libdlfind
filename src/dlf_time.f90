@@ -164,6 +164,7 @@ subroutine time_report
      write(stdout,'("=============")')
      write(stdout,'("Module                       &
          &               CPU time            Wall clock time")')
+     call flush(stdout)
      maxcpu=maxval(clock(:)%accum_cpu_time)
      maxwall=maxval(clock(:)%accum_wall_time)
      do iclock=1,maxclock

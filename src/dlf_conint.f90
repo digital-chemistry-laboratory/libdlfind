@@ -1093,6 +1093,15 @@ subroutine dlf_checkpoint_conint_write
    use dlf_conint, only: conint
    use dlf_checkpoint, only: tchkform, write_separator
    implicit none
+  ! YL 15/12/2020: we need avoid using file units ifunit, 101, or 102 to make Cray compiler happy
+  !                see pp 141: http://103.251.184.12/wp-content/uploads/2018/01/Cray_Fortran_Reference_Manual_S-3901_86.pdf
+  !                The values of INPUT_UNIT, OUTPUT_UNIT, and ERROR_UNIT defined in the ISO_Fortran_env module are
+  !                ifunit, 101, and 102, respectively. These three unit numbers are reserved and may not be used for other purposes.
+  !                The files connected to these units are the same files used by the companion C processor for standard input
+  !                (stdin), output (stdout), and error (stderr). An asterisk (*) specified as the unit for a READ statement specifies unit
+  !                ifunit. An asterisk specified as the unit for a WRITE statement, and the unit for PRINT statements is unit 101. All
+  !                positive default integer values are available for use as unit numbers.
+  integer, parameter :: ifunit = 104
 
    select case (glob%imultistate)
    case (0)
@@ -1101,24 +1110,24 @@ subroutine dlf_checkpoint_conint_write
       ! No checkpoint required
    case (3)
       if (tchkform) then
-         open(unit=100, file="dlf_conint.chk", form="formatted")
+         open(unit=ifunit, file="dlf_conint.chk", form="formatted")
       else
-         open(unit=100, file="dlf_conint.chk", form="unformatted")
+         open(unit=ifunit, file="dlf_conint.chk", form="unformatted")
       end if
-      call write_separator(100, "LN data")
+      call write_separator(ifunit, "LN data")
       if (tchkform) then
-         write(100,*) conint%xGradMean, conint%iGradMean, &
+         write(ifunit,*) conint%xGradMean, conint%iGradMean, &
               conint%iGradMeanOld, conint%xGradDiff, &
               conint%iGradDiffOld, conint%iCoupling, &
               conint%iCouplingOld, conint%extrap, conint%oldIsOrthog
       else
-         write(100) conint%xGradMean, conint%iGradMean, &
+         write(ifunit) conint%xGradMean, conint%iGradMean, &
               conint%iGradMeanOld, conint%xGradDiff, &
               conint%iGradDiffOld, conint%iCoupling, &
               conint%iCouplingOld, conint%extrap, conint%oldIsOrthog
       end if
-      call write_separator(100, "END LN data")
-      close(100)
+      call write_separator(ifunit, "END LN data")
+      close(ifunit)
    end select
 
 end subroutine dlf_checkpoint_conint_write
@@ -1149,6 +1158,7 @@ subroutine dlf_checkpoint_conint_read(tok)
    implicit none
    logical, intent(out) :: tok
    logical :: tchk
+   integer, parameter :: ifunit = 104
 
    tok = .false.
 
@@ -1167,26 +1177,26 @@ subroutine dlf_checkpoint_conint_read(tok)
          return
       end if
       if (tchkform) then
-         open(unit=100, file="dlf_conint.chk", form="formatted")
+         open(unit=ifunit, file="dlf_conint.chk", form="formatted")
       else
-         open(unit=100, file="dlf_conint.chk", form="unformatted")
+         open(unit=ifunit, file="dlf_conint.chk", form="unformatted")
       end if
-      call read_separator(100, "LN data", tchk)
+      call read_separator(ifunit, "LN data", tchk)
       if (.not. tchk) return
       if (tchkform) then
-         read(100,*,end=201,err=200) conint%xGradMean, conint%iGradMean, &
+         read(ifunit,*,end=201,err=200) conint%xGradMean, conint%iGradMean, &
               conint%iGradMeanOld, conint%xGradDiff, &
               conint%iGradDiffOld, conint%iCoupling, &
               conint%iCouplingOld, conint%extrap, conint%oldIsOrthog
       else
-         read(100,end=201,err=200) conint%xGradMean, conint%iGradMean, &
+         read(ifunit,end=201,err=200) conint%xGradMean, conint%iGradMean, &
               conint%iGradMeanOld, conint%xGradDiff, &
               conint%iGradDiffOld, conint%iCoupling, &
               conint%iCouplingOld, conint%extrap, conint%oldIsOrthog
       end if
-      call read_separator(100, "END LN data", tchk)
+      call read_separator(ifunit, "END LN data", tchk)
       if (.not. tchk) return
-      close(100)
+      close(ifunit)
       tok = .true.
    end select
    return

@@ -714,7 +714,10 @@ subroutine dlf_get_params(nvar,nvar2,nspec,coords,coords2,spec,ierr, &
   task=0 !1011
 
   distort=0.D0 !0.4 
+
+  ! YL 02/03/2020: toggle 3-D cartesian coordinates or sequenctial variables
   tatoms=0
+
   icoord=0 !0 cartesian coord !210 Dimer !190 qts search !120 NEB frozen endpoint
   massweight=0
 
@@ -816,9 +819,11 @@ subroutine test_update
   real(rk) :: svar
   integer :: ivar,jvar,vp8,target_image,step,lastimage,jimage,turnimg
   logical :: havehessian,fracrecalc
+  integer, parameter :: ifunit = 105
+  integer, parameter :: ifunit2 = 106
 
-  open(unit=102,file="grad_coor.bin",form="unformatted")
-  read(102) varperimage,nimage
+  open(unit=ifunit2,file="grad_coor.bin",form="unformatted")
+  read(ifunit2) varperimage,nimage
   print*,"varperimage,nimage",varperimage,nimage
   vp8=varperimage
 
@@ -827,12 +832,12 @@ subroutine test_update
 !!$  call allocate(determinant,int(nimage,kind=8))
 
   do iimage=1,nimage
-    read(102) ivar4
+    read(ifunit2) ivar4
     print*,"Reading coords/grad of image",ivar4
-    read(102) grad(:,iimage)
-    read(102) coords(:,iimage)
+    read(ifunit2) grad(:,iimage)
+    read(ifunit2) coords(:,iimage)
   end do
-  close(102)
+  close(ifunit2)
   print*,"Coords sucessfully read"
 
   ! print coords and grad
@@ -843,9 +848,9 @@ subroutine test_update
         ivar,coords(ivar,iimage),grad(ivar,iimage)
   end do
 
-  open(unit=101,file="hessian.bin",form="unformatted")
+  open(unit=ifunit,file="hessian.bin",form="unformatted")
   ! Hessian in mass-weighted coordinates on the diagnal blocks - everything else should be zero
-  read(101) iimage,ivar4!neb%varperimage,neb%nimage
+  read(ifunit) iimage,ivar4!neb%varperimage,neb%nimage
   if(iimage/=varperimage.or.ivar4/=nimage) then
     print*,"Dimensions read",iimage,ivar4
     call dlf_fail("ERROR: wrong dimensions in hessian.bin!")
@@ -853,8 +858,8 @@ subroutine test_update
   ivar=2*varperimage*nimage
   print*,"File Hessian size",ivar
   call allocate(fhess,ivar,ivar)
-  read(101) fhess
-  close(101)
+  read(ifunit) fhess
+  close(ifunit)
   print*,"Hessian sucessfully read"
 
   ! map hessian to different array:
