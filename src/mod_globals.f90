@@ -20,12 +20,12 @@ module mod_globals
   use mod_api
 
   implicit none
-  procedure(c_dlf_error), pointer :: dlf_error_ => null()
-  procedure(c_dlf_get_gradient), pointer :: dlf_get_gradient_ => null()
-  procedure(c_dlf_get_hessian), pointer :: dlf_get_hessian_ => null()
-  procedure(c_dlf_get_multistate_gradients), pointer :: dlf_get_multistate_gradients_ => null()
-  procedure(c_dlf_get_params), pointer :: dlf_get_params_ => null()
-  procedure(c_dlf_put_coords), pointer :: dlf_put_coords_ => null()
-  procedure(c_dlf_update), pointer :: dlf_update_ => null()
+  procedure(dlf_error_interface), pointer :: dlf_error_callback => null()
+  procedure(dlf_get_gradient_interface), pointer :: dlf_get_gradient_callback => null()
+  procedure(dlf_get_hessian_interface), pointer :: dlf_get_hessian_callback => null()
+  procedure(dlf_get_multistate_gradients_interface), pointer :: dlf_get_multistate_gradients_callback=> null()
+  procedure(dlf_get_params_interface), pointer :: dlf_get_params_callback => null()
+  procedure(dlf_put_coords_interface), pointer :: dlf_put_coords_callback => null()
+  procedure(dlf_update_interface), pointer :: dlf_update_callback => null()
 
 end module

@@ -22,12 +22,12 @@ module mod_api
   implicit none
 
   abstract interface
-    subroutine c_dlf_error()
+    subroutine dlf_error_interface() bind(c)
     end subroutine
   end interface
 
   abstract interface
-    subroutine c_dlf_get_gradient(nvar, coords, energy, gradient, iimage, kiter, status)
+    subroutine dlf_get_gradient_interface(nvar, coords, energy, gradient, iimage, kiter, status) bind(c)
       import c_double, c_int
 
       implicit none
@@ -42,7 +42,7 @@ module mod_api
   end interface
 
   abstract interface
-    subroutine c_dlf_get_hessian(nvar, coords, hessian, status)
+    subroutine dlf_get_hessian_interface(nvar, coords, hessian, status) bind(c)
       import c_double, c_int
 
       implicit none
@@ -54,7 +54,8 @@ module mod_api
   end interface
 
   abstract interface
-    subroutine c_dlf_get_multistate_gradients(nvar, coords, energy, gradient, coupling, needcoupling, iimage, status)
+    subroutine dlf_get_multistate_gradients_interface(nvar, coords, energy, gradient, coupling, needcoupling, iimage, status) &
+        bind(c)
       import c_double, c_int
 
       implicit none
@@ -70,14 +71,14 @@ module mod_api
   end interface
 
   abstract interface
-    subroutine c_dlf_get_params( &
+    subroutine dlf_get_params_interface( &
       nvar, nvar2, nspec, coords, coords2, spec, ierr, tolerance, printl, maxcycle, maxene, tatoms, icoord, iopt, iline, &
       maxstep, scalestep, lbfgs_mem, nimage, nebk, dump, restart, nz, ncons, nconn, update, maxupd, delta, soft, inithessian, &
       carthessian, tsrel, maxrot, tolrot, nframe, nmass, nweight, timestep, fric0, fricfac, fricp, imultistate, state_i, &
       state_j, pf_c1, pf_c2, gp_c3, gp_c4, ln_t1, ln_t2, printf, tolerance_e, distort, massweight, minstep, maxdump, task, &
       temperature, po_pop_size, po_radius, po_contraction, po_tolerance_r, po_tolerance_g, po_distribution, po_maxcycle, &
       po_init_pop_size, po_reset, po_mutation_rate, po_death_rate, po_scalefac, po_nsave, ntasks, tdlf_farm, n_po_scaling, &
-      neb_climb_test, neb_freeze_test, nzero, coupled_states, qtsflag, imicroiter, maxmicrocycle, micro_esp_fit)
+      neb_climb_test, neb_freeze_test, nzero, coupled_states, qtsflag, imicroiter, maxmicrocycle, micro_esp_fit) bind(c)
       import c_double, c_int
 
       implicit none
@@ -167,7 +168,7 @@ module mod_api
   end interface
 
   abstract interface
-    subroutine c_dlf_put_coords(nvar, switch, energy, coords, iam)
+    subroutine dlf_put_coords_interface(nvar, switch, energy, coords, iam) bind(c)
       import c_double, c_int
 
       implicit none
@@ -180,7 +181,7 @@ module mod_api
   end interface
 
   abstract interface
-    subroutine c_dlf_update()
+    subroutine dlf_update_interface() bind(c)
     end subroutine
   end interface
 

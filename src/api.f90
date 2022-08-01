@@ -16,8 +16,8 @@
 !  License along with libdlfind.  If not, see
 !  <http://www.gnu.org/licenses/>.
 
-subroutine api_dl_find(nvarin, nvarin2, nspec, master, c_dlf_error_, c_dlf_get_gradient_, c_dlf_get_hessian_, &
-                       c_dlf_get_multistate_gradients_, c_dlf_get_params_, c_dlf_put_coords_, c_dlf_update_) bind(c)
+subroutine api_dl_find(nvarin, nvarin2, nspec, master, dlf_error_c, dlf_get_gradient_c, dlf_get_hessian_c, &
+                       dlf_get_multistate_gradients_c, dlf_get_params_c, dlf_put_coords_c, dlf_update_c) bind(c)
   use mod_globals
   use mod_api
   use iso_c_binding, only: c_int, c_double, c_funptr, c_f_procpointer
@@ -27,33 +27,33 @@ subroutine api_dl_find(nvarin, nvarin2, nspec, master, c_dlf_error_, c_dlf_get_g
   integer(c_int), intent(in), value :: nvarin2 ! number of variables to read in in the second array (coords2)
   integer(c_int), intent(in), value :: nspec ! number of values in the integer array spec
   integer(c_int), intent(in), value :: master ! 1 if this task is the master of a parallel run, 0 otherwise
-  type(c_funptr), intent(in), value :: c_dlf_error_, c_dlf_get_gradient_, c_dlf_get_hessian_, c_dlf_get_multistate_gradients_, &
-                                       c_dlf_get_params_, c_dlf_put_coords_, c_dlf_update_ ! Functions received from C side
+  type(c_funptr), intent(in), value :: dlf_error_c, dlf_get_gradient_c, dlf_get_hessian_c, dlf_get_multistate_gradients_c, &
+                                       dlf_get_params_c, dlf_put_coords_c, dlf_update_c ! Functions received from C side
 
   ! Assign procedure pointers
-  call c_f_procpointer(c_dlf_error_, dlf_error_)
-  call c_f_procpointer(c_dlf_get_gradient_, dlf_get_gradient_)
-  call c_f_procpointer(c_dlf_get_hessian_, dlf_get_hessian_)
-  call c_f_procpointer(c_dlf_get_multistate_gradients_, dlf_get_multistate_gradients_)
-  call c_f_procpointer(c_dlf_get_params_, dlf_get_params_)
-  call c_f_procpointer(c_dlf_put_coords_, dlf_put_coords_)
-  call c_f_procpointer(c_dlf_update_, dlf_update_)
+  call c_f_procpointer(dlf_error_c, dlf_error_callback)
+  call c_f_procpointer(dlf_get_gradient_c, dlf_get_gradient_callback)
+  call c_f_procpointer(dlf_get_hessian_c, dlf_get_hessian_callback)
+  call c_f_procpointer(dlf_get_multistate_gradients_c, dlf_get_multistate_gradients_callback)
+  call c_f_procpointer(dlf_get_params_c, dlf_get_params_callback)
+  call c_f_procpointer(dlf_put_coords_c, dlf_put_coords_callback)
+  call c_f_procpointer(dlf_update_c, dlf_update_callback)
 
   ! Call main DL-FIND subroutine
   call dl_find(nvarin, nvarin2, nspec, master)
 end subroutine
 
 subroutine dlf_error()
-  use mod_globals, only: dlf_error_
+  use mod_globals, only: dlf_error_callback
 
   implicit none
 
-  call dlf_error_()
+  call dlf_error_callback()
   error stop "DL-FIND crashed after calling dlf_error."
 end subroutine
 
 subroutine dlf_get_gradient(nvar, coords, energy, gradient, iimage, kiter, status)
-  use mod_globals, only: dlf_get_gradient_
+  use mod_globals, only: dlf_get_gradient_callback
   use dlf_parameter_module, only: rk
 
   implicit none
@@ -65,11 +65,11 @@ subroutine dlf_get_gradient(nvar, coords, energy, gradient, iimage, kiter, statu
   integer, intent(in) :: kiter ! flag related to microiterations
   integer, intent(out) :: status ! return code
 
-  call dlf_get_gradient_(nvar, coords, energy, gradient, iimage, kiter, status)
+  call dlf_get_gradient_callback(nvar, coords, energy, gradient, iimage, kiter, status)
 end subroutine
 
 subroutine dlf_get_hessian(nvar, coords, hessian, status)
-  use mod_globals, only: dlf_get_hessian_
+  use mod_globals, only: dlf_get_hessian_callback
   use dlf_parameter_module, only: rk
 
   implicit none
@@ -78,11 +78,11 @@ subroutine dlf_get_hessian(nvar, coords, hessian, status)
   real(rk), intent(out) :: hessian(nvar, nvar) ! hessian
   integer, intent(out) :: status ! return code
 
-  call dlf_get_hessian_(nvar, coords, hessian, status)
+  call dlf_get_hessian_callback(nvar, coords, hessian, status)
 end subroutine
 
 subroutine dlf_get_multistate_gradients(nvar, coords, energy, gradient, coupling, needcoupling, iimage, status)
-  use mod_globals, only: dlf_get_multistate_gradients_
+  use mod_globals, only: dlf_get_multistate_gradients_callback
   use dlf_parameter_module, only: rk
 
   implicit none
@@ -94,7 +94,7 @@ subroutine dlf_get_multistate_gradients(nvar, coords, energy, gradient, coupling
   integer, intent(in) :: needcoupling ! true if interstate coupling gradients should be calculated
   integer, intent(in) :: iimage ! current image (for NEB)
   integer, intent(out) :: status ! return code
-  call dlf_get_multistate_gradients_(nvar, coords, energy, gradient, coupling, needcoupling, iimage, status)
+  call dlf_get_multistate_gradients_callback(nvar, coords, energy, gradient, coupling, needcoupling, iimage, status)
 end subroutine
 
 subroutine dlf_get_params( &
@@ -107,7 +107,7 @@ subroutine dlf_get_params( &
   nzero, coupled_states, qtsflag, imicroiter, maxmicrocycle, micro_esp_fit &
   )
   use dlf_parameter_module, only: rk
-  use mod_globals, only: dlf_get_params_
+  use mod_globals, only: dlf_get_params_callback
 
   implicit none
   integer, intent(in) :: nvar ! number of xyz variables (3*nat)
@@ -193,7 +193,7 @@ subroutine dlf_get_params( &
   integer, intent(inout) :: maxmicrocycle ! max number of microiterative cycles before switching back to macro
   integer, intent(inout) :: micro_esp_fit ! fit ESP charges to inner region during microiterations
 
-  call dlf_get_params_( &
+  call dlf_get_params_callback( &
     nvar, nvar2, nspec, coords, coords2, spec, ierr, tolerance, printl, maxcycle, maxene, tatoms, icoord, iopt, iline, maxstep, &
     scalestep, lbfgs_mem, nimage, nebk, dump, restart, nz, ncons, nconn, update, maxupd, delta, soft, inithessian, carthessian, &
     tsrel, maxrot, tolrot, nframe, nmass, nweight, timestep, fric0, fricfac, fricp, imultistate, state_i, state_j, pf_c1, pf_c2, &
@@ -205,7 +205,7 @@ subroutine dlf_get_params( &
 end subroutine
 
 subroutine dlf_put_coords(nvar, switch, energy, coords, iam)
-  use mod_globals, only: dlf_put_coords_
+  use mod_globals, only: dlf_put_coords_callback
   use dlf_parameter_module, only: rk
 
   implicit none
@@ -215,13 +215,13 @@ subroutine dlf_put_coords(nvar, switch, energy, coords, iam)
   real(rk), intent(in) :: coords(nvar) ! coordinates
   integer, intent(in) :: iam ! flag for MPI runs
 
-  call dlf_put_coords_(nvar, switch, energy, coords, iam)
+  call dlf_put_coords_callback(nvar, switch, energy, coords, iam)
 end subroutine
 
 subroutine dlf_update()
-  use mod_globals, only: dlf_update_
+  use mod_globals, only: dlf_update_callback
 
   implicit none
 
-  call dlf_update_()
+  call dlf_update_callback()
 end subroutine
