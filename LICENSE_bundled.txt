@@ -2,7 +2,7 @@ This binary distributions of libdlfind also includes the following software (dep
 
 Name: OpenBLAS
 Files on Linux: ../libdlfind.libs/libopenblas*.so
-Files on MacOS: dylibs/libopenblas*.dylib,
+Files on MacOS: .dylibs/libopenblas*.dylib,
 Files on Windows:
 Description: Dynamically linked on Linux and statically linked on Windows
 Availability: https://github.com/xianyi/OpenBLAS/
@@ -40,7 +40,7 @@ License: 3-clause BSD
 
 Name: LAPACK
 Files on Linux: ../libdlfind.libs/libopenblas*.so
-Files on MacOS: dylibs/libopenblas*.dylib,
+Files on MacOS: .dylibs/libopenblas*.dylib,
 Files in Windows:
 Description: Included in OpenBLAS
 Availability: https://github.com/xianyi/OpenBLAS/
@@ -97,7 +97,7 @@ License 3-clause BSD
 
 Name: GCC runtime libraries
 Files on Linux: ../libdlfind.libs/libgfortran*.so, ../libdlfind.libs/libquadmath*.so
-Files on MacOS: dylibs/libgfortran*.dylib, dylibs/libgcc*.dylib, .ylibs/libquadmath*.dylib
+Files on MacOS: .dylibs/libgfortran*.dylib, .dylibs/libgcc*.dylib, .dylibs/libquadmath*.dylib
 Files on Windows:
 Description: Dynamically (MacOS, Linux) or statically linked (Windows) to files compiled with gcc
 Availability: https://gcc.gnu.org/viewcvs/gcc/
