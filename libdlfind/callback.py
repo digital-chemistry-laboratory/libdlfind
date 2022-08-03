@@ -21,39 +21,19 @@
 from __future__ import annotations
 
 from ctypes import c_double, c_int, pointer
+import functools
 from typing import Callable, Optional
 
 import numpy as np
 from numpy.ctypeslib import as_array
 from numpy.typing import ArrayLike
 
-from libdlfind.function_types import (
-    type_dlf_error,
-    type_dlf_get_gradient,
-    type_dlf_get_hessian,
-    type_dlf_get_multistate_gradients,
-    type_dlf_get_params,
-    type_dlf_put_coords,
-    type_dlf_update,
-)
 
-
-def make_dlf_error(func: Callable) -> Callable:
-    """Factory function for dlf_error."""
-
-    @type_dlf_error
-    def dlf_error() -> None:
-        func()
-        return
-
-    return dlf_error
-
-
-def make_dlf_get_gradient(func: Callable) -> Callable:
+def dlf_get_gradient_wrapper(func: Callable) -> Callable:
     """Factory function for dlf_get_gradient."""
 
-    @type_dlf_get_gradient
-    def dlf_get_gradient(
+    @functools.wraps(func)
+    def wrapper(
         nvar: int,
         coords: pointer[c_double],
         energy: pointer[c_double],
@@ -61,23 +41,25 @@ def make_dlf_get_gradient(func: Callable) -> Callable:
         iimage: int,
         kiter: int,
         status: pointer[c_int],
+        *args,
+        **kwargs,
     ) -> None:
         coords_ = as_array(coords, (nvar,)).reshape(-1, 3)
-        e, g = func(coords_, iimage, kiter)
+        e, g = func(coords_, iimage, kiter, *args, **kwargs)
         energy[0] = c_double(e)
         gradient_ = as_array(gradient, (nvar,))
         gradient_[:] = g.reshape(-1)
         status[0] = c_int(0)
         return
 
-    return dlf_get_gradient
+    return wrapper
 
 
-def make_dlf_get_hessian(func: Callable) -> Callable:
+def dlf_get_hessian_wrapper(func: Callable) -> Callable:
     """Factory function for dlf_get_hessian."""
 
-    @type_dlf_get_hessian
-    def dlf_get_hessian(
+    @functools.wraps(func)
+    def wrapper(
         nvar: int,
         coords: pointer[c_double],
         hessian: pointer[c_double],
@@ -90,14 +72,14 @@ def make_dlf_get_hessian(func: Callable) -> Callable:
         status[0] = c_int(0)
         return
 
-    return dlf_get_hessian
+    return wrapper
 
 
-def make_dlf_get_multistate_gradients(func: Callable) -> Callable:
+def dlf_get_multistate_gradients_wrapper(func: Callable) -> Callable:
     """Factory function for dlf_get_multistate_gradients."""
 
-    @type_dlf_get_multistate_gradients
-    def dlf_get_multistate_gradients(
+    @functools.wraps(func)
+    def wrapper(
         nvar: int,
         coords: pointer[c_double],
         energy: pointer[c_double],
@@ -121,7 +103,7 @@ def make_dlf_get_multistate_gradients(func: Callable) -> Callable:
         status[0] = c_int(0)
         return
 
-    return dlf_get_multistate_gradients
+    return wrapper
 
 
 def make_dlf_get_params(  # noqa: C901
@@ -207,7 +189,6 @@ def make_dlf_get_params(  # noqa: C901
 ) -> Callable:
     """Factory function for dlf_get_params."""
 
-    @type_dlf_get_params
     def dlf_get_params(
         nvar_: int,
         nvar2_: int,
@@ -457,27 +438,22 @@ def make_dlf_get_params(  # noqa: C901
     return dlf_get_params
 
 
-def make_dlf_put_coords(func: Callable) -> Callable:
+def dlf_put_coords_wrapper(func: Callable) -> Callable:
     """Factory function for dlf_put_coords."""
 
-    @type_dlf_put_coords
-    def dlf_put_coords(
-        nvar: int, switch: int, energy: float, coords: pointer[c_double], iam: int
+    @functools.wraps(func)
+    def wrapper(
+        nvar: int,
+        switch: int,
+        energy: float,
+        coords: pointer[c_double],
+        iam: int,
+        *args,
+        **kwargs,
     ) -> None:
         coords_ = as_array(coords, (nvar,)).reshape(-1, 3)
-        func(switch, energy, coords_, iam)
+        func(switch, energy, coords_, iam, *args, **kwargs)
 
         return
 
-    return dlf_put_coords
-
-
-def make_dlf_update(func: Callable) -> Callable:
-    """Factory function for dlf_update."""
-
-    @type_dlf_update
-    def dlf_update() -> None:
-        func()
-        return
-
-    return dlf_update
+    return wrapper

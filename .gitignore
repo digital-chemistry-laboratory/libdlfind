@@ -8,6 +8,7 @@ __pycache__/
 .pytest_cache
 .ipynb_checkpoints
 *synctex*
+.DS_Store
 
 # Distribution/packaging
 _skbuild/
