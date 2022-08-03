@@ -26,14 +26,6 @@ from typing import Callable
 
 from numpy.ctypeslib import load_library
 
-from libdlfind.dummies import (
-    dummy_dlf_error,
-    dummy_dlf_get_gradient,
-    dummy_dlf_get_hessian,
-    dummy_dlf_get_multistate_gradients,
-    dummy_dlf_put_coords,
-    dummy_dlf_update,
-)
 from libdlfind.function_types import (
     type_dlf_error,
     type_dlf_get_gradient,
@@ -71,13 +63,13 @@ def dl_find(
     nspec: int | None = None,
     master: int = 1,
     *,
-    dlf_error: Callable = dummy_dlf_error,
-    dlf_get_gradient: Callable = dummy_dlf_get_gradient,
-    dlf_get_hessian: Callable = dummy_dlf_get_hessian,
-    dlf_get_multistate_gradients: Callable = dummy_dlf_get_multistate_gradients,
+    dlf_error: Callable = lambda *args: None,
+    dlf_get_gradient: Callable = lambda *args: None,
+    dlf_get_hessian: Callable = lambda *args: None,
+    dlf_get_multistate_gradients: Callable = lambda *args: None,
     dlf_get_params: Callable,
-    dlf_put_coords: Callable = dummy_dlf_put_coords,
-    dlf_update: Callable = dummy_dlf_update,
+    dlf_put_coords: Callable = lambda *args: None,
+    dlf_update: Callable = lambda *args: None,
 ) -> None:
     """Run DL-FIND.
 
@@ -112,11 +104,11 @@ def dl_find(
         c_int(nvarin2),
         c_int(nspec),
         c_int(master),
-        dlf_error,
-        dlf_get_gradient,
-        dlf_get_hessian,
-        dlf_get_multistate_gradients,
-        dlf_get_params,
-        dlf_put_coords,
-        dlf_update,
+        type_dlf_error(dlf_error),
+        type_dlf_get_gradient(dlf_get_gradient),
+        type_dlf_get_hessian(dlf_get_hessian),
+        type_dlf_get_multistate_gradients(dlf_get_multistate_gradients),
+        type_dlf_get_params(dlf_get_params),
+        type_dlf_put_coords(dlf_put_coords),
+        type_dlf_update(dlf_update),
     )

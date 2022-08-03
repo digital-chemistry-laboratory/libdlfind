@@ -11,10 +11,10 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 from libdlfind import dl_find
-from libdlfind.factories import (
-    make_dlf_get_gradient,
+from libdlfind.callback import (
+    dlf_get_gradient_wrapper,
+    dlf_put_coords_wrapper,
     make_dlf_get_params,
-    make_dlf_put_coords,
 )
 
 
@@ -32,6 +32,7 @@ def add_conformers_to_mol(mol: Chem.Mol, conformer_coordinates: ArrayLike) -> No
         mol.AddConformer(conformer, assignId=True)
 
 
+@dlf_get_gradient_wrapper
 def e_g_func(
     coordinates: NDArray[np.float_], iimage: int, kiter: int, mol: Chem.Mol
 ) -> tuple[float, NDArray[np.float_]]:
@@ -45,6 +46,7 @@ def e_g_func(
     return energy, gradient
 
 
+@dlf_put_coords_wrapper
 def store_results(
     switch: int,
     energy: float,
@@ -72,11 +74,9 @@ def test_methane_rdkit() -> None:
     traj_coordinates: list[float] = []
 
     dlf_get_params = make_dlf_get_params(coords=mol.GetConformer().GetPositions())
-    dlf_get_gradient = make_dlf_get_gradient(functools.partial(e_g_func, mol=mol))
-    dlf_put_coords = make_dlf_put_coords(
-        functools.partial(
-            store_results, traj_coords=traj_coordinates, traj_energies=traj_energies
-        )
+    dlf_get_gradient = functools.partial(e_g_func, mol=mol)
+    dlf_put_coords = functools.partial(
+        store_results, traj_coords=traj_coordinates, traj_energies=traj_energies
     )
 
     # Run DL-FIND
