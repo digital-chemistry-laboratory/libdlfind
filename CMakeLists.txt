@@ -21,12 +21,8 @@ add_library(dlfind SHARED ${srcs})
 target_link_libraries(dlfind ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
 # Set compiler arguments
-if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU AND CMAKE_Fortran_COMPILER_VERSION
-                                              VERSION_LESS 10)
-  target_compile_options(dlfind PRIVATE -Wargument-mismatch)
-elseif(CMAKE_Fortran_COMPILER_ID STREQUAL GNU AND CMAKE_Fortran_COMPILER_VERSION
-                                                  VERSION_GREATER 9)
-  target_compile_options(dlfind PRIVATE -fallow-argument-mismatch)
+if(CMAKE_Fortran_COMPILER_ID STREQUAL GNU)
+  target_compile_options(dlfind PRIVATE -std=legacy)
 endif()
 
 # Install
