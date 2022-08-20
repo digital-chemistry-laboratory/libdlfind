@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN"
+                  "JATS-publishing1.dtd">
+<article xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" dtd-version="1.2" article-type="other">
+<front>
+<journal-meta>
+<journal-id></journal-id>
+<journal-title-group>
+<journal-title>Journal of Open Source Software</journal-title>
+<abbrev-journal-title>JOSS</abbrev-journal-title>
+</journal-title-group>
+<issn publication-format="electronic">2475-9066</issn>
+<publisher>
+<publisher-name>Open Journals</publisher-name>
+</publisher>
+</journal-meta>
+<article-meta>
+<article-id pub-id-type="publisher-id">0</article-id>
+<article-id pub-id-type="doi">N/A</article-id>
+<title-group>
+<article-title>libdlfind: A C API and Python interface to the DL-FIND
+geometry optimization library</article-title>
+</title-group>
+<contrib-group>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">0000-0002-4191-6790</contrib-id>
+<name>
+<surname>Jorner</surname>
+<given-names>Kjell</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="aff" rid="aff-2"/>
+<xref ref-type="aff" rid="aff-3"/>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">0000-0002-8277-4434</contrib-id>
+<name>
+<surname>Aspuru-Guzik</surname>
+<given-names>Alán</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="aff" rid="aff-2"/>
+<xref ref-type="aff" rid="aff-4"/>
+<xref ref-type="aff" rid="aff-5"/>
+<xref ref-type="aff" rid="aff-6"/>
+<xref ref-type="aff" rid="aff-7"/>
+<xref ref-type="corresp" rid="cor-1"><sup>*</sup></xref>
+</contrib>
+<aff id="aff-1">
+<institution-wrap>
+<institution>Department of Computer Science, University of Toronto, 40
+St. George St, Toronto, Ontario M5S 2E4, Canada</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-2">
+<institution-wrap>
+<institution>Department of Chemistry, Chemical Physics Theory Group, 80
+St. George St., University of Toronto, Ontario M5S 3H6,
+Canada</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-3">
+<institution-wrap>
+<institution>Department of Chemistry and Chemical Engineering, Chalmers
+University of Technology, Kemigården 4, SE-41258, Gothenburg,
+Sweden</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-4">
+<institution-wrap>
+<institution>Department of Chemical Engineering &amp; Applied Chemistry,
+200 College St., University of Toronto, Ontario M5S 3E5,
+Canada</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-5">
+<institution-wrap>
+<institution>Department of Materials Science &amp; Engineering, 184
+College St., University of Toronto, Ontario M5S 3E4,
+Canada</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-6">
+<institution-wrap>
+<institution>Vector Institute for Artificial Intelligence, 661
+University Ave. Suite 710, Toronto, Ontario M5G 1M1,
+Canada</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-7">
+<institution-wrap>
+<institution>Lebovic Fellow, Canadian Institute for Advanced Research
+(CIFAR), 661 University Ave., Toronto, Ontario M5G 1M1,
+Canada</institution>
+</institution-wrap>
+</aff>
+</contrib-group>
+<author-notes>
+<corresp id="cor-1">* E-mail: <email></email></corresp>
+</author-notes>
+<pub-date date-type="pub" publication-format="electronic" iso-8601-date="2022-08-20">
+<day>20</day>
+<month>8</month>
+<year>2022</year>
+</pub-date>
+<volume>¿VOL?</volume>
+<issue>¿ISSUE?</issue>
+<fpage>¿PAGE?</fpage>
+<permissions>
+<copyright-statement>Authors of papers retain copyright and release the
+work under a Creative Commons Attribution 4.0 International License (CC
+BY 4.0)</copyright-statement>
+<copyright-year>2022</copyright-year>
+<copyright-holder>The article authors</copyright-holder>
+<license license-type="open-access" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+<license-p>Authors of papers retain copyright and release the work under
+a Creative Commons Attribution 4.0 International License (CC BY
+4.0)</license-p>
+</license>
+</permissions>
+<kwd-group kwd-group-type="author">
+<kwd>Fortran</kwd>
+<kwd>Python</kwd>
+<kwd>geometry optimization</kwd>
+<kwd>quantum chemistry</kwd>
+</kwd-group>
+</article-meta>
+</front>
+<body>
+<sec id="summary">
+  <title>Summary</title>
+</sec>
+<sec id="statement-of-need">
+  <title>Statement of need</title>
+  <p>One example of such as workflow engine is
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/MolSSI/QCEngine">QCEngine</ext-link>
+  from the
+  <ext-link ext-link-type="uri" xlink:href="https://molssi.org">The
+  Molecular Science Software Institute</ext-link>, which currently
+  support the geometry optimization backends
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/leeping/geomeTRIC">geomeTRIC</ext-link>
+  and
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/jhrmnn/pyberny">PyBerny</ext-link>.
+  Coincidentally, these are also the backends supported by the
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/pyscf/pyscf/">PySCF</ext-link>
+  program.</p>
+  <p><ext-link ext-link-type="uri" xlink:href="https://www.chemshell.org">ChemShell</ext-link>
+  and its Python version
+  Py-ChemShell(<xref alt="Lu et al., 2019" rid="ref-lu_2019" ref-type="bibr">Lu
+  et al., 2019</xref>) support DL-FIND as the geometry optimization
+  backend. We wanted a leaner interface that would allow the user to
+  supply their own arbitrary backends for calculation of energies,
+  gradients and Hessians.</p>
+  <p>and
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/zadorlab/sella">Sella</ext-link>
+  which are focused on library use as well as and
+  <ext-link ext-link-type="uri" xlink:href="https://github.com/eljost/pysisyphus">pysisyphus</ext-link>
+  that are focused on command line use.</p>
+</sec>
+<sec id="features-and-implementation">
+  <title>Features and implementation</title>
+</sec>
+<sec id="acknowledgements">
+  <title>Acknowledgements</title>
+</sec>
+</body>
+<back>
+<ref-list>
+  <ref id="ref-lu_2019">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Lu</surname><given-names>You</given-names></name>
+        <name><surname>Farrow</surname><given-names>Matthew R.</given-names></name>
+        <name><surname>Fayon</surname><given-names>Pierre</given-names></name>
+        <name><surname>Logsdail</surname><given-names>Andrew J.</given-names></name>
+        <name><surname>Sokol</surname><given-names>Alexey A.</given-names></name>
+        <name><surname>Catlow</surname><given-names>C. Richard A.</given-names></name>
+        <name><surname>Sherwood</surname><given-names>Paul</given-names></name>
+        <name><surname>Keal</surname><given-names>Thomas W.</given-names></name>
+      </person-group>
+      <article-title>Open-source, Python-based redevelopment of the ChemShell multiscale QM/MM environment</article-title>
+      <source>Journal of Chemical Theory and Computation</source>
+      <year iso-8601-date="2019-02-12">2019</year><month>02</month><day>12</day>
+      <volume>15</volume>
+      <issue>2</issue>
+      <issn>1549-9618</issn>
+      <pub-id pub-id-type="doi">10.1021/acs.jctc.8b01036</pub-id>
+      <fpage>1317</fpage>
+      <lpage>1328</lpage>
+    </element-citation>
+  </ref>
+</ref-list>
+</back>
+</article>
