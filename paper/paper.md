@@ -33,7 +33,7 @@ bibliography: paper.bib
 
 # Summary
 
-`libdlfind` is a C API and Python interface to the DL-FIND[@dlfind_2009]
+`libdlfind` is a C API and Python interface to the DL-FIND [@dlfind_2009]
 geometry optimization package. It is intended for use by other programs as an
 optimization backend. DL-FIND features robust geometry optimization routines for
 a variety of optimization tasks such as minima, transition states and conical
@@ -61,7 +61,7 @@ supports the geometry optimization backends
 [PyBerny](https://github.com/jhrmnn/pyberny) and
 [OptKing](https://github.com/psi-rking/optking). geomeTRIC and PyBerny are also
 supported by the
-[PySCF](https://github.com/pyscf/pyscf/) [@pyscf_2018; pyscf_2020] quantum
+[PySCF](https://github.com/pyscf/pyscf/) [@pyscf_2018; @pyscf_2020] quantum
 chemistry program. In addition to those libraries, the recent
 [Sella](https://github.com/zadorlab/sella) package is an optimization library for
 the [Atomic Simulation Environment](https://gitlab.com/ase/ase) [@ase_2017]
@@ -89,8 +89,9 @@ The source code from DL-FIND is used in unmodified form from Py-ChemShell
 v21.0.1. On top of this, `libdlfind` adds a number of Fortran module files to
 create a C API. The end user interacts with the C-interoperable function
 `api_dl_find` which takes a number of user-supplied callback functions to
-calculate energies, gradients and Hessians. The library is well documented in
-the `README.md` with a number of usage examples from Python, with emphasis on
+calculate energies, gradients, Hessians etc. A Python interface using `ctypes`
+and `numpy.ctypeslib` [@numpy_2020] is available. The library is well documented
+in the `README.md` with a number of usage examples from Python, with emphasis on
 robustness and thread-safe parallelization. The MPI parallelization of DL-FIND
 is currently not supported. 
 
