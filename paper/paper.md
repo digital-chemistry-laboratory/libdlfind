@@ -54,29 +54,29 @@ flexibility, geometry optimization should be carried out with a library that
 can accept energies, gradients and Hessians from arbitrary sources. 
 
 An example of a workflow engine that utilizes such libraries is
-[QCEngine](https://github.com/MolSSI/QCEngine)[@qcengine_2021] from the [The
+[QCEngine](https://github.com/MolSSI/QCEngine) [@qcengine_2021] from the [The
 Molecular Science Software Institute](https://molssi.org). QCEngine currently
 supports the geometry optimization backends
-[geomeTRIC](https://github.com/leeping/geomeTRIC)[@geometric_2016],
+[geomeTRIC](https://github.com/leeping/geomeTRIC) [@geometric_2016],
 [PyBerny](https://github.com/jhrmnn/pyberny) and
 [OptKing](https://github.com/psi-rking/optking). geomeTRIC and PyBerny are also
 supported by the
-[PySCF](https://github.com/pyscf/pyscf/)[@pyscf_2018;pyscf_2020] quantum
+[PySCF](https://github.com/pyscf/pyscf/) [@pyscf_2018; pyscf_2020] quantum
 chemistry program. In addition to those libraries, the recent
-[Sella](https://github.com/zadorlab/sella) package is an optimizer library for
-the [Atomic Simulation Environment](https://gitlab.com/ase/ase)[@ase_2017]
+[Sella](https://github.com/zadorlab/sella) package is an optimization library for
+the [Atomic Simulation Environment](https://gitlab.com/ase/ase) [@ase_2017]
 focused on library use and
-[pysisyphus](https://github.com/eljost/pysisyphus)[@pysisyphus_2021] is focused
+[pysisyphus](https://github.com/eljost/pysisyphus) [@pysisyphus_2021] is focused
 on command line use.
 
-The original DL-FIND is written in Fortran and designed to be interfaced from
+DL-FIND is written in Fortran and designed to be interfaced from
 Fortran with limited support from C. It can be used together with a series of
 quantum chemistry codes via [ChemShell](https://www.chemshell.org) and its
-Python version Py-ChemShell[@lu_2019]. In comparison, `libdlfind` provides a
+Python version Py-ChemShell [@chemshell_2019]. In comparison, `libdlfind` provides a
 leaner interface that allows the user to supply their own arbitrary functions
 for calculation of energies, gradients and Hessians. `libdlfind` therefore
 fulfills the need of ease of integration into modern Python-based workflows. The
-general C API of `libdlfind` takes advantage of Modern Fortran[@fortran_2022] C
+general C API of `libdlfind` takes advantage of Modern Fortran [@fortran_2022] C
 interoperability and allows access from any language with a C Foreign Function
 Interface (CFFI). A Python API is packaged for installation via `pip` and
 `conda`, and it would be straightforward to package also for other languages
@@ -98,18 +98,16 @@ DL-FIND itself provides the following optimization types:
 
 - Minima
 - Transition states
-- Nudged Elastic Band
-- Dimer method
+- Reaction paths
 - Conical intersections
 
-The folowing coordinate systems are available:
+The following coordinate systems are available:
 
-- Cartesian coordinates
-- Mass-weighted Cartesian coordinates
+- (Mass-weighted) Cartesian coordinates
 - Delocalized internal coordinates
 - Hybrid delocalized coordinates
 
-In addition, constraints in internal coordinates can also be applied. DL-FIND is
+In addition, constraints and freezing of atoms is also supported. DL-FIND is
 further optimized for use in QM/MM calculations.
 
 # Acknowledgements
