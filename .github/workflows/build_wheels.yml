@@ -33,7 +33,7 @@ jobs:
           pacman -S mingw-w64-x86_64-openblas --noconfirm
           echo "c:\rtools40\mingw64\lib;" >> $env:GITHUB_PATH
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.11.3
+        uses: pypa/cibuildwheel@v2.12.3
         env:
           CIBW_BUILD_VERBOSITY: 1
           CIBW_ARCHS_MACOS: x86_64
