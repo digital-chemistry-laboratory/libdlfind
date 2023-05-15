@@ -21,7 +21,7 @@ $ conda install -c conda-forge libdlfind
 The shared library can also be used to interface with other languages than Python. It can be built with CMake and installed.
 
 ```shell
-$ git clone https://github.com/kjelljorner/libdlfind.git
+$ git clone https://github.com/digital-chemistry-laboratory/libdlfind.git
 $ cd libdlfind
 $ cmake -B build -DCMAKE_BUILD_TYPE=Release 
 $ cmake --build build
