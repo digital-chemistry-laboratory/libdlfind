@@ -50,7 +50,7 @@ jobs:
       - name: Install RTools Windows # https://github.com/scipy/scipy/blob/main/.github/workflows/windows.yml
         if: contains(matrix.os, 'windows')
         run: |
-          choco install rtools --no-progress
+          choco install rtools -y --no-progress --force --version=4.0.0.20220206
           echo "c:\rtools40\mingw64\bin;" >> $env:GITHUB_PATH
           echo "c:\rtools40\usr\bin;" >> $env:GITHUB_PATH
 
