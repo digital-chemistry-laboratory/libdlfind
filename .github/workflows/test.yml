@@ -10,11 +10,11 @@ on:
 jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python_version }}
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu, macos, windows]
+        os: [ubuntu-latest, macos-latest, windows-2019]
         python_version: ["3.8", "3.9", "3.10"]
         include:
           - os: ubuntu
