@@ -44,6 +44,27 @@ How the Hessian is updated.
 - 2: Bofill update (default)
 - 3: BGFS update
 
+#### ``tolerance``
+Convergence criterion on max gradient component. Default is 4.5E-4.
+
+#### ``tolerance_e``
+Convergence criterion on max energy change. Default is 1E-6.
+
+#### ``maxcycle``
+Max number of cycles. Default is 100.
+
+#### ``lbgfs_mem``
+Memory for L-BGFS algorithm. Defaults to ``nvarin``, with min value 5 and max value 50.
+
+#### ``maxupd``
+Max number of Hessian updates. Default is 50.
+
+#### ``maxstep``
+Maximum stepsize (in internal coordinates). Default is 0.5.
+
+#### ``delta``
+Delta for finite-difference Hessian calculations (in internal coordinates). Default is 0.01.
+
 #### ``spec``
 Freezing atoms, etc for optimization. (``spec`` is an array with an entry for each atom.)
 - \>0: active, treated normally. The value can be used to encode residue/fragment number.
