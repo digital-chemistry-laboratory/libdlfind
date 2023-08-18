@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-2019]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         python_version: ["3.8", "3.9", "3.10"]
         include:
           - os: ubuntu
@@ -50,7 +50,7 @@ jobs:
       - name: Install RTools Windows # https://github.com/scipy/scipy/blob/main/.github/workflows/windows.yml
         if: contains(matrix.os, 'windows')
         run: |
-          choco install rtools --no-progress
+          choco install rtools -y --no-progress --force --version=4.0.0.20220206
           echo "c:\rtools40\mingw64\bin;" >> $env:GITHUB_PATH
           echo "c:\rtools40\usr\bin;" >> $env:GITHUB_PATH
 
