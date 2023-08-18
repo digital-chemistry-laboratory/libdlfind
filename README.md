@@ -283,7 +283,7 @@ The `dlf_update` function allows updating of neighbor lists for algorithms that 
 ### Keywords
 
 DL-FIND is a powerful optimization package with many options. They are partially described in the DL-FIND [documentation](docs/documentation.pdf)
-and more in detail in [api.f90](src/api.f90) and [dlf global module.f90](src/dlf global module.f90).
+and more in detail in [api.f90](src/api.f90) and [dlf_global_module.f90](src/dlf_global_module.f90).
 
 A concise summary of some of the most important options can be found [here](docs/README.md).
 
