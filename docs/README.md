@@ -1,4 +1,4 @@
-# docs
+# Short Description
 
 The DLFIND manual is attached. For convenience, a non-exhaustive list of default parameter values is provided here. 
 The "under-the-hood" algorithms for choosing default parameters are in some cases more complicated than those presented here:
@@ -12,8 +12,14 @@ Printout level.
 - 6: debug
 
 #### ``icoord``
-Type of coordinate system—many options possible (see DLFIND manual).
+Type of coordinate system.
 - 0: Cartesian (default)
+- 1: hybrid delocalized internal coordinates, primitive internal coordinate scheme
+- 2: hybrid delocalized internal coordinates, total connection scheme
+- 3: delocalized internal coordinates, primitive internal coordinate scheme
+- 4: delocalized internal coordinates, total connection scheme
+- 10–14: Lagrange–Newton conical intersection search, with 2nd digit referring to above options
+- 100+: nudged elastic band, quantum TS search, dimer method, chain search (see DLFIND manual).
 
 #### ``iopt``
 Controls optimization algorithm.
@@ -28,6 +34,18 @@ Type of line search or trust radius.
 - 0: simple scaling (default for ``iopt`` > 3)
 - 1: trust radius based on energy criterion (default when ``iopt`` is 3)
 - 2: trust radius based on gradient criterion (default when ``iopt`` is 0, 1, or 2)
+
+#### ``imultistate``
+Multistate calculations.
+- 0: single-state calculation (default)
+- 1: conical intersection optimization w/ penalty function algorithm
+- 2: conical intersection optimization w/ gradient projection algorithm
+- 3: conical intersection optimization w/ Lagrange–Newton algorithm
+
+#### ``imicroiterations``
+Microiterative optimization for multilayer systems. Layers assigned via ``spec``.
+- 0: standard (non-microiterative) optimization (default)
+- 1: microiterative optimization
 
 #### ``inithessian``
 Method used to generate initial Hessian matrix.
