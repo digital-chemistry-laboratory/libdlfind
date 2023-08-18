@@ -285,28 +285,7 @@ The `dlf_update` function allows updating of neighbor lists for algorithms that 
 DL-FIND is a powerful optimization package with many options. They are partially described in the DL-FIND [documentation](docs/documentation.pdf)
 and more in detail in [api.f90](src/api.f90) and [dlf global module.f90](src/dlf global module.f90).
 
-The most important parameters for regular optimizations are:
-
-- `printl`: Print level
-
-- `icoord`: Type of coordinate system
-
-- `iopt`: Type of optimization algorithm
-
-- `iline`: Type of line search or trust radius
-
-For optimizations using Hessian information:
-
-- `inithessian`: Type of initial Hessian
-
-- `update`: Hessian update mechanism
-
-For conical intersection optimizations:
-
-- `imultistate`: Multistate calculations
-
-- `imicroiter`: Micro-iterative optimization
-- `spec`: Fragment and frozen atom information
+A concise summary of some of the most important options can be found [here](docs/README.md).
 
 ### Robust usage
 
