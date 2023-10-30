@@ -46,7 +46,7 @@ module mod_api
       import c_double, c_int
 
       implicit none
-      integer(c_int), intent(in) :: nvar
+      integer(c_int), intent(in), value :: nvar
       real(c_double), intent(in) :: coords(nvar)
       real(c_double), intent(out) :: hessian(nvar, nvar)
       integer, intent(out) :: status
