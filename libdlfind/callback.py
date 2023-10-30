@@ -66,7 +66,7 @@ def dlf_get_hessian_wrapper(func: Callable) -> Callable:
         status: pointer[c_int],
     ) -> None:
         coords_ = as_array(coords, shape=(nvar,)).reshape((-1, 3))
-        hessian_ = as_array(hessian, shape=(nvar,))
+        hessian_ = as_array(hessian, shape=(nvar,nvar))
         hessian = func(coords_)
         hessian_[:, :] = hessian
         status[0] = c_int(0)
