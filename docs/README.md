@@ -27,7 +27,7 @@ Controls optimization algorithm.
 - 1: Polak-Ribiere conjugate gradient w/ automatic restart
 - 2: Polak-Ribiere conjugate gradient w/ restart every 10 steps
 - 3: L-BGFS (default)
-- 9: P-RFO, for transition state searches
+- 10: P-RFO, for transition state searches
 
 #### ``iline``
 Type of line search or trust radius.
