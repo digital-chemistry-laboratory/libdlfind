@@ -2,10 +2,12 @@
 from __future__ import annotations
 
 import functools
+from pathlib import Path
 
 import numpy as np
 from numpy.testing import assert_allclose
 from numpy.typing import ArrayLike, NDArray
+import pytest
 import rdkit
 from rdkit import Chem
 from rdkit.Chem import AllChem
@@ -88,3 +90,51 @@ def test_methane_rdkit() -> None:
     )
 
     assert_allclose(traj_energies[-1], 0.02638, atol=1e-5)
+
+
+@dlf_get_gradient_wrapper
+def lj_cluster(
+    coordinates: NDArray[np.float_], iimage: int, kiter: int, energies: list[float]
+) -> tuple[float, NDArray[np.float_]]:
+    """Lennard-Jones energy and gradient (epsilon = sigma = 1)."""
+    d = coordinates[:, None, :] - coordinates[None, :, :]
+    r2 = (d**2).sum(-1) + np.eye(len(coordinates))
+    inv6 = r2**-3
+    energy = 2.0 * (inv6**2 - inv6)[np.triu_indices(len(coordinates), 1)].sum()
+    forces = (24.0 * (2.0 * inv6**2 - inv6) / r2)[:, :, None] * d
+    energies.append(energy)
+    return energy, -forces.sum(axis=1)
+
+
+def run_global_search(iopt: int) -> list[float]:
+    """Run DL-FIND's stochastic (51) or genetic (52) search on an LJ7 cluster."""
+    start = np.random.default_rng(0).uniform(-1.2, 1.2, size=(7, 3))
+    energies: list[float] = []
+    dl_find(
+        nvarin=start.size,
+        dlf_get_gradient=functools.partial(lj_cluster, energies=energies),
+        dlf_get_params=make_dlf_get_params(
+            coords=start, iopt=iopt, icoord=0, maxcycle=50, po_pop_size=4, po_maxcycle=5
+        ),
+    )
+    return energies
+
+
+def test_stochastic_search(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Stochastic search runs, and a fixed DLF_PO_SEED makes it reproducible."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DLF_PO_SEED", "1234")
+    energies = run_global_search(51)
+    assert len(energies) > 0
+    assert np.all(np.isfinite(energies))
+    assert_allclose(run_global_search(51), energies, rtol=0, atol=0)
+
+
+def test_genetic_search(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Genetic search runs, and a fixed DLF_PO_SEED makes it reproducible."""
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("DLF_PO_SEED", "1234")
+    energies = run_global_search(52)
+    assert len(energies) > 0
+    assert np.all(np.isfinite(energies))
+    assert_allclose(run_global_search(52), energies, rtol=0, atol=0)
