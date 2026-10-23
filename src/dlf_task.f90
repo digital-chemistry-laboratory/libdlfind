@@ -236,6 +236,17 @@ subroutine dlf_task( &
     call store_set("tscoords",3*glob%nat,glob%xcoords)
 
     ! store the transition mode
+    ! xcoords2 holds it from here on, and the downhill runs distort along it
+    ! (dlf_coords needs tcoords2). A run given no second geometry has
+    ! neither, so set them up the way dlf_dimer does for its direction.
+    if(.not.allocated(glob%xcoords2)) then
+      if(glob%tatoms) then
+        call allocate(glob%xcoords2,3,glob%nat,1)
+      else
+        call allocate(glob%xcoords2,1,glob%nvar,1)
+      end if
+    end if
+    glob%tcoords2=.true.
     ! make sure TS-mode from the first run is used
     call dlf_formstep_get_ra("TSMODE_R",glob%nat*3,glob%xcoords2(:,:,1),tok)
     if(.not.tok) then
