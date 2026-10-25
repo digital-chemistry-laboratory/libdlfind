@@ -1476,6 +1476,11 @@ subroutine dlf_cartesian_align(nat,coords1,coords2)
   !  write(*,"('Eigval, vec a_k ',f10.3,5x,3f10.3)") eigval(i),eigvec(:,i)
   !end do
 
+  ! For a linear molecule rsmat has a degenerate eigenvalue, and the
+  ! diagonaliser may return any basis of that subspace, so the alignment
+  ! could change from run to run. Make the eigenvectors deterministic.
+  call dlf_align_canon_eigvec(3,eigval,eigvec)
+
   ! It turns out that the rotation matrix may have a determinat of -1
   ! in the procedure used here, i.e. the system is mirrored - which is
   ! wrong chemically. This can be avoided by inserting a minus in the
@@ -1540,6 +1545,119 @@ subroutine dlf_cartesian_align(nat,coords1,coords2)
     coords2(:,iat)= coords2(:,iat)+center
   end do
 end subroutine dlf_cartesian_align
+!!****
+
+! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!!****f* coords/dlf_align_canon_eigvec
+!!
+!! FUNCTION
+!!
+!! Make the eigenvectors of the symmetric matrix in dlf_cartesian_align
+!! deterministic, including for (near-)degenerate eigenvalues:
+!!
+!! (a) each eigenvector's sign is fixed so that its largest-magnitude
+!!     component is positive. This does not change dlf_cartesian_align's
+!!     result, which depends on each column only bilinearly.
+!! (b) eigenvalues within rel_tol of each other (relative to the largest)
+!!     form a cluster, whose eigenvectors are replaced by a canonical basis
+!!     of the same subspace: the coordinate axes projected onto it, then
+!!     orthonormalised by column-pivoted Gram-Schmidt. The projector onto a
+!!     cluster is stable under small perturbations of the matrix even when
+!!     the individual eigenvectors are not.
+!!
+!! SYNOPSIS
+subroutine dlf_align_canon_eigvec(n,eigval,eigvec)
+!! SOURCE
+  use dlf_parameter_module, only: rk
+  implicit none
+  integer , intent(in)    :: n
+  real(rk), intent(in)    :: eigval(n)
+  real(rk), intent(inout) :: eigvec(n,n)
+  !
+  real(rk), parameter :: rel_tol = 1.D-8 ! relative gap below which eigenvalues cluster
+  integer  :: clusterid(n),csize,first,i,j,k,m,imax,bestcol,nfound
+  logical  :: used(n)
+  real(rk) :: scale,proj(n,n),cols(n,n),newvec(n,n),nrm,bestnorm
+! **********************************************************************
+
+  ! (b) cluster the eigenvalues (returned in ascending order)
+  scale=maxval(abs(eigval))*rel_tol
+  clusterid(1)=1
+  do i=2,n
+    if(eigval(i)-eigval(i-1) <= scale) then
+      clusterid(i)=clusterid(i-1)
+    else
+      clusterid(i)=clusterid(i-1)+1
+    end if
+  end do
+
+  i=1
+  do while(i<=n)
+    first=i
+    csize=1
+    do while(first+csize<=n)
+      if(clusterid(first+csize)/=clusterid(first)) exit
+      csize=csize+1
+    end do
+
+    if(csize>=2) then
+      ! projector onto the cluster's subspace
+      proj=0.D0
+      do m=first,first+csize-1
+        do k=1,n
+          do j=1,n
+            proj(k,j)=proj(k,j)+eigvec(k,m)*eigvec(j,m)
+          end do
+        end do
+      end do
+
+      ! column-pivoted Gram-Schmidt on the projected axes (the columns of
+      ! proj): take the largest remaining column each time
+      cols=proj
+      used=.false.
+      nfound=0
+      do while(nfound<csize)
+        bestcol=-1
+        bestnorm=-1.D0
+        do m=1,n
+          if(used(m)) cycle
+          nrm=dot_product(cols(:,m),cols(:,m))
+          if(nrm>bestnorm) then
+            bestnorm=nrm
+            bestcol=m
+          end if
+        end do
+        ! should not happen (trace(proj) = csize); keep the original vectors
+        if(bestnorm < 1.D-12) exit
+        used(bestcol)=.true.
+        nfound=nfound+1
+        newvec(:,nfound)=cols(:,bestcol)/sqrt(bestnorm)
+        do m=1,n
+          if(used(m)) cycle
+          cols(:,m)=cols(:,m)-dot_product(newvec(:,nfound),cols(:,m))*newvec(:,nfound)
+        end do
+      end do
+
+      if(nfound==csize) then
+        do m=1,csize
+          eigvec(:,first+m-1)=newvec(:,m)
+        end do
+      end if
+    end if
+
+    i=first+csize
+  end do
+
+  ! (a) fix the sign of every column
+  do k=1,n
+    imax=1
+    do i=2,n
+      if(abs(eigvec(i,k)) > abs(eigvec(imax,k))) imax=i
+    end do
+    if(eigvec(imax,k) < 0.D0) eigvec(:,k)=-eigvec(:,k)
+  end do
+
+end subroutine dlf_align_canon_eigvec
 !!****
 
 ! %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
