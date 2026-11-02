@@ -108,6 +108,8 @@ subroutine dlf_parallel_opt(trestarted_report, tconv &
   integer              :: nresets, noffspring, lower_index, arr_size
   integer,dimension(1) :: position
   integer,dimension(8) :: time_data
+  character(len=32)    :: seed_env
+  integer              :: seed_env_stat, seed_env_val
   integer,allocatable  :: seed(:), nevals_save(:)
   logical              :: stochastic, genetic, trestarted_report, tconv, texit
   logical              :: dummy_logical, trestarted, tno_diversity
@@ -182,6 +184,17 @@ subroutine dlf_parallel_opt(trestarted_report, tconv &
        seed = 1
        call date_and_time(values = time_data)
        seed(1) = time_data(8)
+       ! DLF_PO_SEED, when set to an integer, replaces the clock so a
+       ! search can be reproduced; the rest of the seed is derived from it
+       ! exactly as from the clock below.
+       call get_environment_variable("DLF_PO_SEED", seed_env, status = seed_env_stat)
+       if (seed_env_stat == 0) then
+          read(seed_env, *, iostat = seed_env_stat) seed_env_val
+          if (seed_env_stat == 0) then
+             seed(1) = seed_env_val
+             time_data = seed_env_val
+          end if
+       end if
        do i = 1, seed_size - 1
           seed(i + 1) = time_data(8 - mod(i,8)) * seed(1) * i
           ! use smallest units of time_data first, and make the repeats different
@@ -252,7 +265,7 @@ subroutine dlf_parallel_opt(trestarted_report, tconv &
           ! evaluate initial point
           call clock_start("EANDG")
           call dlf_get_gradient(glob%nvar,glob%xcoords,energy_best, &
-               glob%xgradient,iimage,&
+               glob%xgradient,iimage,-1,&
 #ifdef GAMESS
                core,&
 #endif
@@ -352,7 +365,7 @@ subroutine dlf_parallel_opt(trestarted_report, tconv &
 !!! CODE it will not be used before it is filled with the proper values, and
 !!! to save memory I don't want an unnecessary init_pop_xgradient array.
                 call dlf_get_gradient(glob%nvar,glob%xcoords, &
-                     init_pop_energies(j), pop_xgradient(1,:,:),iimage,&
+                     init_pop_energies(j), pop_xgradient(1,:,:),iimage,-1,&
 #ifdef GAMESS
                      core,&
 #endif
@@ -641,7 +654,7 @@ integer :: l, m, status
 
           call clock_start("EANDG")
           call dlf_get_gradient(glob%nvar,glob%xcoords,pop_energies(m), &
-               pop_xgradient(m,:,:),iimage,&
+               pop_xgradient(m,:,:),iimage,-1,&
 #ifdef GAMESS
                core,&
 #endif
@@ -1153,13 +1166,16 @@ integer :: l, k
        end if
     end do
 
-    if (glob%dump > 0 .and. mod(i,glob%dump)==0) then
-       call clock_start("CHECKPOINT")
-       if (printl>=6) write(stdout,"('Writing restart information')")
-       status = 1
-       call dlf_checkpoint_write(status)
-       call dlf_checkpoint_po_write
-       call clock_stop("CHECKPOINT")
+    ! nested: Fortran need not short-circuit .and., and mod(i,0) traps
+    if (glob%dump > 0) then
+       if (mod(i,glob%dump)==0) then
+          call clock_start("CHECKPOINT")
+          if (printl>=6) write(stdout,"('Writing restart information')")
+          status = 1
+          call dlf_checkpoint_write(status)
+          call dlf_checkpoint_po_write
+          call clock_stop("CHECKPOINT")
+       end if
     end if
 
     write(stdout,'(1x,a,es16.9)')"Lowest energy = ",energy_best
@@ -1314,13 +1330,16 @@ real(rk) :: mean_e, mean_e2, sigma_e
        tconv = .true.
     end if
 
-    if (glob%dump > 0 .and. mod(i,glob%dump)==0) then
-       call clock_start("CHECKPOINT")
-       if (printl>=6) write(stdout,"('Writing restart information')")
-       status = 1
-       call dlf_checkpoint_write(status)
-       call dlf_checkpoint_po_write
-       call clock_stop("CHECKPOINT")
+    ! nested: Fortran need not short-circuit .and., and mod(i,0) traps
+    if (glob%dump > 0) then
+       if (mod(i,glob%dump)==0) then
+          call clock_start("CHECKPOINT")
+          if (printl>=6) write(stdout,"('Writing restart information')")
+          status = 1
+          call dlf_checkpoint_write(status)
+          call dlf_checkpoint_po_write
+          call clock_stop("CHECKPOINT")
+       end if
     end if
 
     call flush(stdout)
